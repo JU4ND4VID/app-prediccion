@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
-from sklearn.tree import DecisionTreeClassifier, export_text, export_graphviz
+from sklearn.tree import DecisionTreeClassifier, export_text
 from sklearn.preprocessing import LabelEncoder
-import graphviz as graphviz
+import graphviz
 import re
 
 def procesar_arbol_decision():
-    st.title("🌳 Árbol de Decisión - Clasificación Categórica")
+    st.title("🌳 Árbol de Decisión - Estilo del Profesor")
 
     uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
 
@@ -25,7 +25,6 @@ def procesar_arbol_decision():
         st.markdown("### Selección de variables")
         target_col = st.selectbox("Selecciona la variable a predecir (target)", columnas_validas)
 
-        # Sugerencia automática si detecta que es el archivo del profesor
         columnas_defecto = ["Nivel_Acad", "Area_Estudio", "Estrato"]
         if all(col in columnas for col in columnas_defecto):
             input_cols = st.multiselect(
@@ -58,22 +57,7 @@ def procesar_arbol_decision():
 
                 st.success("Árbol entrenado correctamente.")
 
-                # Visualización elegante con Graphviz
-                st.subheader("🌐 Visualización del árbol (categorías)")
-                dot_data = export_graphviz(
-                    clf,
-                    out_file=None,
-                    feature_names=input_cols,
-                    class_names=label_encoders[target_col].classes_,
-                    filled=True,
-                    rounded=True,
-                    special_characters=True
-                )
-                st.graphviz_chart(dot_data)
-
-                # Extraer reglas con decodificación
-                st.subheader("📋 Reglas de Clasificación Generadas")
-
+                # Reglas desde sklearn
                 rules_raw = export_text(clf, feature_names=input_cols)
                 rules_list = rules_raw.strip().split("\n")
                 reglas = []
@@ -94,8 +78,8 @@ def procesar_arbol_decision():
                     else:
                         partes = re.split(r"<=|>", texto)
                         if len(partes) < 2:
-                            continue  # evita errores si la línea está mal formada
-                        campo = partes[0].strip().lstrip('-')
+                            continue
+                        campo = re.sub(r"[^a-zA-Z0-9_]", "", partes[0]).strip()
                         valor = float(partes[1].strip())
                         operador = "<=" if "<=" in texto else ">"
                         if campo in label_encoders:
@@ -103,9 +87,42 @@ def procesar_arbol_decision():
                         else:
                             valor_legible = valor
                         condiciones_actuales = condiciones_actuales[:nivel]
-                        condiciones_actuales.append(f"{campo.strip()} {operador} {valor_legible}")
+                        condiciones_actuales.append(f"{campo} = {valor_legible}")
 
-                st.dataframe(pd.DataFrame(reglas))
+                st.subheader("📋 Reglas de Clasificación Generadas")
+                df_reglas = pd.DataFrame(reglas)
+                st.dataframe(df_reglas)
+
+                # Construir árbol visual desde reglas
+                st.subheader("🌳 Diagrama del Árbol (estilo profesor)")
+                dot = "digraph Tree {\nnode [shape=box, style=filled, color=lightblue];\n"
+                nodo_id = 0
+                nodos = {}
+
+                for regla in reglas:
+                    condiciones = regla["Condición lógica"].split(" y ") if regla["Condición lógica"] != "(sin condición)" else []
+                    clase = regla["Clase resultante"]
+
+                    prev = "root"
+                    if prev not in nodos:
+                        dot += f'{prev} [label="Inicio"];\n'
+                        nodos[prev] = True
+
+                    for cond in condiciones:
+                        nodo_actual = prev + "_" + cond.replace(" ", "_")
+                        if nodo_actual not in nodos:
+                            dot += f'{nodo_actual} [label="{cond}"];\n'
+                            dot += f'{prev} -> {nodo_actual};\n'
+                            nodos[nodo_actual] = True
+                        prev = nodo_actual
+
+                    hoja = f'{prev}_class_{nodo_id}'
+                    dot += f'{hoja} [label="Categoría: {clase}", color=lightgreen];\n'
+                    dot += f'{prev} -> {hoja};\n'
+                    nodo_id += 1
+
+                dot += "}"
+                st.graphviz_chart(dot)
 
             except Exception as e:
-                st.error(f"❌ Error al generar el árbol: {str(e)}")
+                st.error(f"❌ Error: {str(e)}")
