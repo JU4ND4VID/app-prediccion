@@ -10,8 +10,8 @@ from sklearn.exceptions import NotFittedError
 
 # Opcional: para KMedoids
 try:
-    from sklearn_extra.cluster import KMedoids
-    kmedoids_available = True
+    kmedoids_available = False  # Desactivado temporalmente por errores en Cloud
+
 except ImportError:
     kmedoids_available = False
 
