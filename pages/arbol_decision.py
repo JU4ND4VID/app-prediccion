@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier, export_text
 from sklearn.preprocessing import LabelEncoder
-import graphviz
 import re
 
 def procesar_arbol_decision():
@@ -57,7 +56,7 @@ def procesar_arbol_decision():
 
                 st.success("Árbol entrenado correctamente.")
 
-                # Reglas desde sklearn
+                # Extraer reglas categóricas
                 rules_raw = export_text(clf, feature_names=input_cols)
                 rules_list = rules_raw.strip().split("\n")
                 reglas = []
@@ -79,7 +78,7 @@ def procesar_arbol_decision():
                         partes = re.split(r"<=|>", texto)
                         if len(partes) < 2:
                             continue
-                        campo = re.sub(r"[^a-zA-Z0-9_]", "", partes[0]).strip()
+                        campo = partes[0].strip().replace("|", "").replace("-", "").strip()
                         valor = float(partes[1].strip())
                         operador = "<=" if "<=" in texto else ">"
                         if campo in label_encoders:
@@ -93,7 +92,7 @@ def procesar_arbol_decision():
                 df_reglas = pd.DataFrame(reglas)
                 st.dataframe(df_reglas)
 
-                # Construir árbol visual desde reglas
+                # Visualización estilo profesor
                 st.subheader("🌳 Diagrama del Árbol (estilo profesor)")
                 dot = "digraph Tree {\nnode [shape=box, style=filled, color=lightblue];\n"
                 nodo_id = 0
@@ -109,7 +108,7 @@ def procesar_arbol_decision():
                         nodos[prev] = True
 
                     for cond in condiciones:
-                        nodo_actual = prev + "_" + cond.replace(" ", "_")
+                        nodo_actual = prev + "_" + cond.replace(" ", "_").replace("=", "").replace(".", "")
                         if nodo_actual not in nodos:
                             dot += f'{nodo_actual} [label="{cond}"];\n'
                             dot += f'{prev} -> {nodo_actual};\n'
