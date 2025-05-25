@@ -6,7 +6,7 @@ import graphviz as graphviz
 import re
 
 def procesar_arbol_decision():
-    st.title("🌳 Árbol de Decisión Categórico (Estilo Profesional)")
+    st.title("🌳 Árbol de Decisión - Clasificación Categórica")
 
     uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
 
@@ -22,8 +22,22 @@ def procesar_arbol_decision():
         columnas = df.columns.tolist()
         columnas_validas = [col for col in columnas if df[col].dtype == 'object' or df[col].nunique() <= 20]
 
+        st.markdown("### Selección de variables")
         target_col = st.selectbox("Selecciona la variable a predecir (target)", columnas_validas)
-        input_cols = st.multiselect("Selecciona las variables de entrada (features)", [col for col in columnas_validas if col != target_col])
+
+        # Sugerencia automática si detecta que es el archivo del profesor
+        columnas_defecto = ["Nivel_Acad", "Area_Estudio", "Estrato"]
+        if all(col in columnas for col in columnas_defecto):
+            input_cols = st.multiselect(
+                "Selecciona las variables de entrada (features)",
+                [col for col in columnas_validas if col != target_col],
+                default=columnas_defecto
+            )
+        else:
+            input_cols = st.multiselect(
+                "Selecciona las variables de entrada (features)",
+                [col for col in columnas_validas if col != target_col]
+            )
 
         if st.button("Generar Árbol de Decisión"):
             try:
@@ -39,13 +53,13 @@ def procesar_arbol_decision():
                 X = df_encoded[input_cols]
                 y = df_encoded[target_col]
 
-                clf = DecisionTreeClassifier(criterion="entropy", max_depth=5)
+                clf = DecisionTreeClassifier(criterion="entropy", max_depth=3, random_state=0)
                 clf.fit(X, y)
 
                 st.success("Árbol entrenado correctamente.")
 
-                # 🌳 Visualización profesional con Graphviz
-                st.subheader("🌐 Visualización elegante del árbol de decisión")
+                # Visualización elegante con Graphviz
+                st.subheader("🌐 Visualización del árbol (categorías)")
                 dot_data = export_graphviz(
                     clf,
                     out_file=None,
@@ -57,8 +71,9 @@ def procesar_arbol_decision():
                 )
                 st.graphviz_chart(dot_data)
 
-                # 📋 Generación de reglas en tabla legible
+                # Extraer reglas con decodificación
                 st.subheader("📋 Reglas de Clasificación Generadas")
+
                 rules_raw = export_text(clf, feature_names=input_cols)
                 rules_list = rules_raw.strip().split("\n")
                 reglas = []
@@ -78,12 +93,17 @@ def procesar_arbol_decision():
                         })
                     else:
                         partes = re.split(r"<=|>", texto)
-                        campo = partes[0].strip()
+                        if len(partes) < 2:
+                            continue  # evita errores si la línea está mal formada
+                        campo = partes[0].strip().lstrip('-')
                         valor = float(partes[1].strip())
-                        valor_decodificado = label_encoders[campo].inverse_transform([int(valor)])[0]
                         operador = "<=" if "<=" in texto else ">"
+                        if campo in label_encoders:
+                            valor_legible = label_encoders[campo].inverse_transform([int(valor)])[0]
+                        else:
+                            valor_legible = valor
                         condiciones_actuales = condiciones_actuales[:nivel]
-                        condiciones_actuales.append(f"{campo} {operador} {valor_decodificado}")
+                        condiciones_actuales.append(f"{campo.strip()} {operador} {valor_legible}")
 
                 st.dataframe(pd.DataFrame(reglas))
 
