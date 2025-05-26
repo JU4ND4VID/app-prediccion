@@ -11,10 +11,10 @@ def mostrar_explicacion():
 
     2. **Entropía**  
     Mide la impureza o incertidumbre de un conjunto de datos.  
-    Fórmula:  
-    $$
-    Entropía(S) = - \sum_{i=1}^c p_i \log_2(p_i)
-    $$
+    Fórmula:
+    """)
+    st.latex(r"Entropía(S) = - \sum_{i=1}^c p_i \log_2(p_i)")
+    st.markdown("""
     donde:  
     - \(S\) es el conjunto de datos,  
     - \(c\) es el número de clases,  
@@ -23,16 +23,16 @@ def mostrar_explicacion():
     Si todos los datos pertenecen a una sola clase, la entropía es 0 (conjunto puro).  
     Si las clases están distribuidas uniformemente, la entropía es máxima.
 
- 3. **Ganancia de Información**  
-Mide cuánto reduce la entropía un atributo al dividir los datos.  
-Fórmula:  
-$$
-Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{\left| S_v \right|}{\left| S \right|} \cdot Entropía(S_v)
-$$
-donde:  
-- \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
+    3. **Ganancia de Información**  
+    Mide cuánto reduce la entropía un atributo al dividir los datos.  
+    Fórmula:
+    """)
+    st.latex(r"Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{\left| S_v \right|}{\left| S \right|} \cdot Entropía(S_v)")
+    st.markdown("""
+    donde:  
+    - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
 
-Elegimos el atributo con **máxima ganancia** para dividir.
+    Elegimos el atributo con **máxima ganancia** para dividir.
 
     4. **Proceso Recursivo**  
     Calcula la entropía y ganancia para cada atributo.  
@@ -49,9 +49,8 @@ Elegimos el atributo con **máxima ganancia** para dividir.
 
     6. **Extracción de Reglas**  
     Cada camino desde la raíz hasta una hoja representa una regla.  
-    La regla concatena las condiciones de cada nodo en el camino.  
+    La regla concatena las condiciones de cada nodo en el camino.
 
     Ejemplo:  
     `Si Nivel académico = Magíster y Estrato socioeconómico = Medio y Área de estudio = Ingeniería, entonces Categoría = Titular`
     """)
-
