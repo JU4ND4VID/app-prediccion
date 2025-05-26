@@ -2,10 +2,11 @@ import streamlit as st
 
 def mostrar_explicacion_id3():
     st.title("Explicación del algoritmo Árbol de Decisión ID3")
+
     st.markdown("""
     # Proceso de construcción del Árbol de Decisión ID3
 
-    1. **Introducción (actualizar en pagina)**  
+    1. **Introducción**  
     El algoritmo ID3 construye un árbol de decisión que clasifica datos usando el criterio de máxima ganancia de información, basada en la entropía.
 
     2. **Entropía**  
@@ -26,12 +27,12 @@ def mostrar_explicacion_id3():
     Mide cuánto reduce la entropía un atributo al dividir los datos.  
     Fórmula:  
     $$
-    Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|} Entropía(S_v)
+    Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|} \cdot Entropía(S_v)
     $$
     donde:  
     - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
 
-    Elegimos el atributo con máxima ganancia para dividir.
+    Elegimos el atributo con **máxima ganancia** para dividir.
 
     4. **Proceso Recursivo**  
     Calcula la entropía y ganancia para cada atributo.  
@@ -53,3 +54,6 @@ def mostrar_explicacion_id3():
     Ejemplo:  
     `Si Nivel académico = Magíster y Estrato socioeconómico = Medio y Área de estudio = Ingeniería, entonces Categoría = Titular`
     """)
+
+# Para usar esta función simplemente llamas:
+# mostrar_explicacion_id3()
