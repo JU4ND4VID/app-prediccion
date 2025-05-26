@@ -23,16 +23,16 @@ def mostrar_explicacion():
     Si todos los datos pertenecen a una sola clase, la entropía es 0 (conjunto puro).  
     Si las clases están distribuidas uniformemente, la entropía es máxima.
 
-    3. **Ganancia de Información**  
-    Mide cuánto reduce la entropía un atributo al dividir los datos.  
-    Fórmula:  
-    $$
-    Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|} Entropía(S_v)
-    $$
-    donde:  
-    - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
+ 3. **Ganancia de Información**  
+Mide cuánto reduce la entropía un atributo al dividir los datos.  
+Fórmula:  
+$$
+Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{\left| S_v \right|}{\left| S \right|} \cdot Entropía(S_v)
+$$
+donde:  
+- \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
 
-    Elegimos el atributo con máxima ganancia para dividir.
+Elegimos el atributo con **máxima ganancia** para dividir.
 
     4. **Proceso Recursivo**  
     Calcula la entropía y ganancia para cada atributo.  
