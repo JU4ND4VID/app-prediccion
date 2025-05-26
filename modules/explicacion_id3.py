@@ -13,7 +13,7 @@ def mostrar_explicacion():
     Mide la impureza o incertidumbre de un conjunto de datos.  
     Fórmula:
     """)
-    st.latex(r"Entropía(S) = - \sum_{i=1}^c p_i \log_2(p_i)")
+    st.latex(r"Entropia(S) = - \sum_{i=1}^c p_i \log_2(p_i)")
     st.markdown("""
     donde:  
     - \(S\) es el conjunto de datos,  
@@ -27,7 +27,7 @@ def mostrar_explicacion():
     Mide cuánto reduce la entropía un atributo al dividir los datos.  
     Fórmula:
     """)
-    st.latex(r"Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{\left| S_v \right|}{\left| S \right|} \cdot Entropía(S_v)")
+    st.latex(r"Ganancia(S, A) = Entropia(S) - \sum_{v \in Valores(A)} \frac{\left| S_v \right|}{\left| S \right|} \cdot Entropia(S_v)")
     st.markdown("""
     donde:  
     - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
