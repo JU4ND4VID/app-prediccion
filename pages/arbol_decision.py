@@ -1,133 +1,144 @@
-import streamlit as st
 import pandas as pd
-from sklearn.tree import DecisionTreeClassifier, export_text
-from sklearn.preprocessing import LabelEncoder
-import re
+import numpy as np
+import streamlit as st
+from graphviz import Digraph
 
-def procesar_arbol_decision():
-    st.title("🌳 Árbol de Decisión - Estilo del Profesor")
+# Función para calcular la entropía de un conjunto
+def calcular_entropia(etiquetas):
+    valores, conteos = np.unique(etiquetas, return_counts=True)
+    probabilidades = conteos / conteos.sum()
+    entropia = -np.sum(probabilidades * np.log2(probabilidades))
+    return entropia
+
+# Función para calcular la ganancia de información
+def ganancia_informacion(data, atributo, target):
+    entropia_total = calcular_entropia(data[target])
+    valores, conteos = np.unique(data[atributo], return_counts=True)
+    entropia_condicional = 0
+    for v, c in zip(valores, conteos):
+        subset = data[data[atributo] == v]
+        entropia_subset = calcular_entropia(subset[target])
+        entropia_condicional += (c / conteos.sum()) * entropia_subset
+    ganancia = entropia_total - entropia_condicional
+    return ganancia
+
+# Nodo del árbol
+class NodoDecision:
+    def __init__(self, atributo=None, hijos=None, es_hoja=False, clase=None):
+        self.atributo = atributo
+        self.hijos = hijos if hijos is not None else {}
+        self.es_hoja = es_hoja
+        self.clase = clase
+
+# Construcción recursiva del árbol ID3
+def construir_arbol(data, atributos, target):
+    # Si todos los ejemplos tienen la misma clase, crear hoja
+    if len(data[target].unique()) == 1:
+        return NodoDecision(es_hoja=True, clase=data[target].iloc[0])
+    
+    # Si no hay atributos para dividir, crear hoja con la clase mayoritaria
+    if len(atributos) == 0:
+        clase_mayoritaria = data[target].mode()[0]
+        return NodoDecision(es_hoja=True, clase=clase_mayoritaria)
+    
+    # Calcular ganancia de información para cada atributo
+    ganancias = {atributo: ganancia_informacion(data, atributo, target) for atributo in atributos}
+    
+    # Seleccionar el atributo con mayor ganancia
+    mejor_atributo = max(ganancias, key=ganancias.get)
+    
+    # Crear nodo raíz con el mejor atributo
+    nodo = NodoDecision(atributo=mejor_atributo)
+    
+    # Para cada valor del mejor atributo, crear ramas recursivas
+    valores_unicos = data[mejor_atributo].unique()
+    for valor in valores_unicos:
+        subset = data[data[mejor_atributo] == valor]
+        if subset.empty:
+            clase_mayoritaria = data[target].mode()[0]
+            nodo.hijos[valor] = NodoDecision(es_hoja=True, clase=clase_mayoritaria)
+        else:
+            atributos_restantes = [a for a in atributos if a != mejor_atributo]
+            nodo.hijos[valor] = construir_arbol(subset, atributos_restantes, target)
+    return nodo
+
+# Función para extraer reglas en formato legible
+def extraer_reglas(nodo, camino=[]):
+    if nodo.es_hoja:
+        regla = " y ".join(camino) if camino else "(sin condición)"
+        return [f"Si {regla}, entonces Categoría = {nodo.clase}"]
+    reglas = []
+    for valor, hijo in nodo.hijos.items():
+        nueva_condicion = f"{nodo.atributo} = {valor}"
+        reglas.extend(extraer_reglas(hijo, camino + [nueva_condicion]))
+    return reglas
+
+# Función para dibujar árbol con Graphviz
+def dibujar_arbol(nodo, dot=None, padre=None, etiqueta=None, contador=[0]):
+    if dot is None:
+        dot = Digraph()
+        dot.node(name='0', label='Inicio')
+        contador[0] = 1
+        padre = '0'
+    
+    nodo_id = str(contador[0])
+    contador[0] +=1
+    
+    if nodo.es_hoja:
+        dot.node(nodo_id, label=f"Categoría: {nodo.clase}", shape='box', style='filled', color='lightgreen')
+    else:
+        dot.node(nodo_id, label=f"{nodo.atributo}", shape='ellipse', style='filled', color='lightblue')
+    
+    dot.edge(padre, nodo_id, label=etiqueta if etiqueta else "")
+    
+    if not nodo.es_hoja:
+        for valor, hijo in nodo.hijos.items():
+            dibujar_arbol(hijo, dot, nodo_id, str(valor), contador)
+    return dot
+
+# Streamlit app
+def app():
+    st.title("🌳 Árbol de Decisión ID3 desde cero")
 
     uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
+    if uploaded_file is None:
+        st.info("Por favor, sube un archivo para continuar.")
+        return
+    
+    if uploaded_file.name.endswith(".csv"):
+        df = pd.read_csv(uploaded_file)
+    else:
+        df = pd.read_excel(uploaded_file)
 
-    if uploaded_file is not None:
-        if uploaded_file.name.endswith(".csv"):
-            df = pd.read_csv(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file)
+    st.subheader("Vista previa de datos")
+    st.dataframe(df)
 
-        st.subheader("Vista previa del archivo")
-        st.dataframe(df)
+    columnas = df.columns.tolist()
+    target_col = st.selectbox("Selecciona la variable a predecir (target)", columnas)
+    input_cols = st.multiselect("Selecciona las variables de entrada (features)", [col for col in columnas if col != target_col])
 
-        columnas = df.columns.tolist()
-        columnas_validas = [col for col in columnas if df[col].dtype == 'object' or df[col].nunique() <= 20]
+    if st.button("Generar árbol ID3"):
+        if not input_cols:
+            st.error("Selecciona al menos una variable de entrada.")
+            return
 
-        st.markdown("### Selección de variables")
-        target_col = st.selectbox("Selecciona la variable a predecir (target)", columnas_validas)
+        # Convertir variables a string para evitar problemas
+        df_model = df[input_cols + [target_col]].astype(str)
 
-        columnas_defecto = ["Nivel_Acad", "Area_Estudio", "Estrato"]
-        if all(col in columnas for col in columnas_defecto):
-            input_cols = st.multiselect(
-                "Selecciona las variables de entrada (features)",
-                [col for col in columnas_validas if col != target_col],
-                default=columnas_defecto
-            )
-        else:
-            input_cols = st.multiselect(
-                "Selecciona las variables de entrada (features)",
-                [col for col in columnas_validas if col != target_col]
-            )
+        # Construir árbol
+        arbol = construir_arbol(df_model, input_cols, target_col)
+        st.success("Árbol construido correctamente.")
 
-        if st.button("Generar Árbol de Decisión"):
-            try:
-                df_model = df[input_cols + [target_col]].astype(str)
+        # Extraer reglas
+        reglas = extraer_reglas(arbol)
+        st.subheader("📋 Reglas de Clasificación Generadas")
+        for i, regla in enumerate(reglas, 1):
+            st.markdown(f"**Regla {i}:** {regla}")
 
-                # Codificar variables categóricas
-                df_encoded = df_model.copy()
-                label_encoders = {}
-                for col in df_encoded.columns:
-                    le = LabelEncoder()
-                    df_encoded[col] = le.fit_transform(df_encoded[col])
-                    label_encoders[col] = le
+        # Dibujar árbol
+        st.subheader("🌳 Diagrama del Árbol (estilo profesorxxxxx)")
+        dot = dibujar_arbol(arbol)
+        st.graphviz_chart(dot)
 
-                X = df_encoded[input_cols]
-                y = df_encoded[target_col]
-
-                clf = DecisionTreeClassifier(criterion="entropy", max_depth=3, random_state=0)
-                clf.fit(X, y)
-
-                st.success("Árbol entrenado correctamente.")
-
-                # Extraer reglas con operadores y valores legibles
-                rules_raw = export_text(clf, feature_names=input_cols)
-                rules_list = rules_raw.strip().split("\n")
-                reglas = []
-                condiciones_actuales = []
-
-                for linea in rules_list:
-                    nivel = linea.count("|   ")
-                    texto = linea.strip().replace("|", "").strip()
-
-                    if "class:" in texto:
-                        clase = texto.split("class:")[-1].strip()
-                        condicion = " y ".join(condiciones_actuales[:nivel])
-                        reglas.append({
-                            "Regla N°": len(reglas) + 1,
-                            "Condición lógica": condicion if condicion else "(sin condición)",
-                            "Clase resultante": clase
-                        })
-                    else:
-                        m = re.match(r"(.+?)\s*(<=|>)\s*(.+)", texto)
-                        if m:
-                            campo, operador, valor = m.groups()
-                            campo = campo.strip()
-                            valor = float(valor.strip())
-
-                            # Mapear valor a categoría original si aplica
-                            if campo in label_encoders:
-                                # Para operadores <= y > en categóricas, muestra valor categórico
-                                valor_cat = label_encoders[campo].inverse_transform([int(valor)])[0]
-                                condicion = f"{campo} {operador} {valor_cat}"
-                            else:
-                                condicion = f"{campo} {operador} {valor}"
-
-                            condiciones_actuales = condiciones_actuales[:nivel]
-                            condiciones_actuales.append(condicion)
-
-                st.subheader("📋 Reglas de Clasificación Generadas")
-                df_reglas = pd.DataFrame(reglas)
-                st.dataframe(df_reglas)
-
-                # Visualización estilo profesor con condiciones legibles
-                st.subheader("🌳 Diagrama del Árbol (estilo profesor)")
-                dot = "digraph Tree {\nnode [shape=box, style=filled, color=lightblue];\n"
-                nodo_id = 0
-                nodos = {}
-
-                for regla in reglas:
-                    condiciones = regla["Condición lógica"].split(" y ") if regla["Condición lógica"] != "(sin condición)" else []
-                    clase = regla["Clase resultante"]
-
-                    prev = "root"
-                    if prev not in nodos:
-                        dot += f'{prev} [label="Inicio"];\n'
-                        nodos[prev] = True
-
-                    for cond in condiciones:
-                        # Limpiar cond para id de nodo
-                        nodo_actual = prev + "_" + cond.replace(" ", "_").replace("=", "").replace(".", "").replace("<=", "le").replace(">", "gt")
-                        if nodo_actual not in nodos:
-                            dot += f'{nodo_actual} [label="{cond}"];\n'
-                            dot += f'{prev} -> {nodo_actual};\n'
-                            nodos[nodo_actual] = True
-                        prev = nodo_actual
-
-                    hoja = f'{prev}_class_{nodo_id}'
-                    dot += f'{hoja} [label="Categoría: {clase}", color=lightgreen];\n'
-                    dot += f'{prev} -> {hoja};\n'
-                    nodo_id += 1
-
-                dot += "}"
-                st.graphviz_chart(dot)
-
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+if __name__ == "__main__":
+    app()
