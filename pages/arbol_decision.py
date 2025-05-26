@@ -41,6 +41,7 @@ def procesar_arbol_decision():
             try:
                 df_model = df[input_cols + [target_col]].astype(str)
 
+                # Codificar variables categóricas
                 df_encoded = df_model.copy()
                 label_encoders = {}
                 for col in df_encoded.columns:
@@ -56,7 +57,7 @@ def procesar_arbol_decision():
 
                 st.success("Árbol entrenado correctamente.")
 
-                # Extraer reglas categóricas
+                # Extraer reglas con operadores y valores legibles
                 rules_raw = export_text(clf, feature_names=input_cols)
                 rules_list = rules_raw.strip().split("\n")
                 reglas = []
@@ -75,24 +76,28 @@ def procesar_arbol_decision():
                             "Clase resultante": clase
                         })
                     else:
-                        partes = re.split(r"<=|>", texto)
-                        if len(partes) < 2:
-                            continue
-                        campo = partes[0].strip().replace("|", "").replace("-", "").strip()
-                        valor = float(partes[1].strip())
-                        operador = "<=" if "<=" in texto else ">"
-                        if campo in label_encoders:
-                            valor_legible = label_encoders[campo].inverse_transform([int(valor)])[0]
-                        else:
-                            valor_legible = valor
-                        condiciones_actuales = condiciones_actuales[:nivel]
-                        condiciones_actuales.append(f"{campo} = {valor_legible}")
+                        m = re.match(r"(.+?)\s*(<=|>)\s*(.+)", texto)
+                        if m:
+                            campo, operador, valor = m.groups()
+                            campo = campo.strip()
+                            valor = float(valor.strip())
+
+                            # Mapear valor a categoría original si aplica
+                            if campo in label_encoders:
+                                # Para operadores <= y > en categóricas, muestra valor categórico
+                                valor_cat = label_encoders[campo].inverse_transform([int(valor)])[0]
+                                condicion = f"{campo} {operador} {valor_cat}"
+                            else:
+                                condicion = f"{campo} {operador} {valor}"
+
+                            condiciones_actuales = condiciones_actuales[:nivel]
+                            condiciones_actuales.append(condicion)
 
                 st.subheader("📋 Reglas de Clasificación Generadas")
                 df_reglas = pd.DataFrame(reglas)
                 st.dataframe(df_reglas)
 
-                # Visualización estilo profesor
+                # Visualización estilo profesor con condiciones legibles
                 st.subheader("🌳 Diagrama del Árbol (estilo profesor)")
                 dot = "digraph Tree {\nnode [shape=box, style=filled, color=lightblue];\n"
                 nodo_id = 0
@@ -108,7 +113,8 @@ def procesar_arbol_decision():
                         nodos[prev] = True
 
                     for cond in condiciones:
-                        nodo_actual = prev + "_" + cond.replace(" ", "_").replace("=", "").replace(".", "")
+                        # Limpiar cond para id de nodo
+                        nodo_actual = prev + "_" + cond.replace(" ", "_").replace("=", "").replace(".", "").replace("<=", "le").replace(">", "gt")
                         if nodo_actual not in nodos:
                             dot += f'{nodo_actual} [label="{cond}"];\n'
                             dot += f'{prev} -> {nodo_actual};\n'
