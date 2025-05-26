@@ -1,54 +1,38 @@
 import streamlit as st
+import importlib
 
 st.set_page_config(page_title="App de Predicción", layout="wide")
-hide_streamlit_style = """
-    <style>
-    /* Oculta la barra de búsqueda en el sidebar */
-    .css-1d391kg input[type="search"] {
-        display: none;
-    }
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-
-
-# Mantener solo título y menú en sidebar
 st.sidebar.title("📂 Menú de algoritmos")
-
 opcion = st.sidebar.selectbox(
     "Selecciona el algoritmo que deseas ejecutar:",
     (
         "Árbol de Decisión",
+        "Explicación ID3",
+        "K-means",
         "Regresión Lineal",
         "Regresión Múltiple",
-        "K-means"
     )
 )
 
-# Botón para ir a la explicación
-if st.sidebar.button("Mostrar explicación ID3"):
-    pagina = "explicacion"
-else:
-    pagina = "main"
+# Diccionario que mapea opciones a módulos
+modulos = {
+    "Árbol de Decisión": "modules.arbol_decision",
+    "Explicación ID3": "modules.explicacion_id3",
+    "K-means": "modules.k_means",
+    "Regresión Lineal": "modules.regresion_lineal",
+    "Regresión Múltiple": "modules.regresion_multiple",
+}
 
-# Navegación condicional
-if pagina == "explicacion":
-    # Aquí cargas la explicación en la página principal
-    from pages.explicacion_id3 import mostrar_explicacion
-    mostrar_explicacion()
+modulo_seleccionado = modulos.get(opcion)
 
+if modulo_seleccionado:
+    mod = importlib.import_module(modulo_seleccionado)
+    # Asumimos que cada módulo tiene función 'run' o 'procesar_*'
+    if hasattr(mod, "run"):
+        mod.run()
+    elif hasattr(mod, "procesar_arbol_decision"):
+        mod.procesar_arbol_decision()
+    # Agrega más condiciones según funciones en módulos
 else:
-    # Ejecutar módulo según algoritmo seleccionado
-    if opcion == "Árbol de Decisión":
-        from pages.arbol_decision import procesar_arbol_decision
-        procesar_arbol_decision()
-    elif opcion == "Regresión Lineal":
-        from pages.regresion_lineal import procesar_regresion_lineal
-        procesar_regresion_lineal()
-    elif opcion == "Regresión Múltiple":
-        from pages.regresion_multiple import procesar_regresion_multiple
-        procesar_regresion_multiple()
-    elif opcion == "K-means":
-        from pages.k_means import procesar_k_means
-        procesar_k_means()
+    st.warning("Selecciona una opción válida.")
