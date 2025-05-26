@@ -1,7 +1,7 @@
 import streamlit as st
 
 def mostrar_explicacion():
-    st.title("Explicación del algoritmo Árbol de Decisión ID3")
+    st.title("Explicación del algoritmo Árbol de Decisión ID3ZZZZ")
 
     st.markdown("""
     # Proceso de construcción del Árbol de Decisión ID3
