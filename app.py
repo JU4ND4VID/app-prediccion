@@ -1,4 +1,16 @@
 import streamlit as st
+
+
+hide_streamlit_style = """
+    <style>
+    /* Oculta la barra de búsqueda en el sidebar */
+    .css-1d391kg input[type="search"] {
+        display: none;
+    }
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 st.set_page_config(page_title="App de Predicción", layout="wide")
 
 # Mantener solo título y menú en sidebar
