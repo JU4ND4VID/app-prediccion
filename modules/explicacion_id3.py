@@ -6,7 +6,7 @@ def mostrar_explicacion():
     st.markdown("""
     # Proceso de construcción del Árbol de Decisión ID3
 
-    1. **Introducción**  
+    1. **Introducciónaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa**  
     El algoritmo ID3 construye un árbol de decisión que clasifica datos usando el criterio de máxima ganancia de información, basada en la entropía.
 
     2. **Entropía**  
