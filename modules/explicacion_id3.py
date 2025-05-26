@@ -54,7 +54,3 @@ def mostrar_explicacion_id3():
     Ejemplo:  
     `Si Nivel académico = Magíster y Estrato socioeconómico = Medio y Área de estudio = Ingeniería, entonces Categoría = Titular`
     """)
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    mostrar_explicacion_id3()

@@ -1,6 +1,4 @@
 import streamlit as st
-from modules.explicacion_id3 import mostrar_explicacion_id3
-
 import importlib
 
 st.set_page_config(page_title="App de Predicción", layout="wide")
@@ -16,9 +14,11 @@ opcion = st.sidebar.selectbox(
     )
 )
 
-mostrar_exp = st.sidebar.button("Mostrar explicación ID3")
+mostrar_explicacion = st.sidebar.button("Mostrar explicación ID3")
 
-if mostrar_exp:
+if mostrar_explicacion:
+    # Importa y ejecuta la función que muestra la explicación
+    from modules.explicacion_id3 import mostrar_explicacion_id3
     mostrar_explicacion_id3()
 else:
     modulos = {
@@ -27,6 +27,7 @@ else:
         "Regresión Lineal": "modules.regresion_lineal",
         "Regresión Múltiple": "modules.regresion_multiple",
     }
+
     modulo_seleccionado = modulos.get(opcion)
 
     if modulo_seleccionado:
