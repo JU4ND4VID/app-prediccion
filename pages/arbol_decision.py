@@ -13,12 +13,20 @@ def ganancia_informacion(data, atributo, target):
     entropia_total = calcular_entropia(data[target])
     valores, conteos = np.unique(data[atributo], return_counts=True)
     entropia_condicional = 0
+    detalles = []
     for v, c in zip(valores, conteos):
         subset = data[data[atributo] == v]
         entropia_subset = calcular_entropia(subset[target])
-        entropia_condicional += (c / conteos.sum()) * entropia_subset
+        peso = c / conteos.sum()
+        entropia_condicional += peso * entropia_subset
+        detalles.append({
+            "Valor": v,
+            "Cantidad": c,
+            "Peso": round(peso, 3),
+            "Entropía Subconjunto": round(entropia_subset, 3)
+        })
     ganancia = entropia_total - entropia_condicional
-    return ganancia
+    return ganancia, detalles
 
 class NodoDecision:
     def __init__(self, atributo=None, hijos=None, es_hoja=False, clase=None):
@@ -27,26 +35,39 @@ class NodoDecision:
         self.es_hoja = es_hoja
         self.clase = clase
 
-def construir_arbol(data, atributos, target):
+def construir_arbol_interactivo(data, atributos, target, nivel=0):
+    indent = "    " * nivel
     if len(data[target].unique()) == 1:
+        st.markdown(f"{indent}📌 Nodo hoja con clase: **{data[target].iloc[0]}**")
         return NodoDecision(es_hoja=True, clase=data[target].iloc[0])
+
     if len(atributos) == 0:
         clase_mayoritaria = data[target].mode()[0]
+        st.markdown(f"{indent}⚠️ Sin atributos restantes. Nodo hoja con clase mayoritaria: **{clase_mayoritaria}**")
         return NodoDecision(es_hoja=True, clase=clase_mayoritaria)
 
-    ganancias = {atributo: ganancia_informacion(data, atributo, target) for atributo in atributos}
-    mejor_atributo = max(ganancias, key=ganancias.get)
-    nodo = NodoDecision(atributo=mejor_atributo)
+    entropia_total = calcular_entropia(data[target])
+    st.markdown(f"{indent}🔸 Entropía total del conjunto: **{entropia_total:.4f}**")
 
+    ganancias = {}
+    for atributo in atributos:
+        ganancia, detalles = ganancia_informacion(data, atributo, target)
+        st.markdown(f"{indent}**Atributo '{atributo}'**: Ganancia = **{ganancia:.4f}**")
+        df_detalles = pd.DataFrame(detalles)
+        st.dataframe(df_detalles)
+        ganancias[atributo] = ganancia
+
+    mejor_atributo = max(ganancias, key=ganancias.get)
+    st.markdown(f"{indent}➡️ **Mejor atributo para dividir: '{mejor_atributo}'**\n")
+
+    nodo = NodoDecision(atributo=mejor_atributo)
     valores_unicos = data[mejor_atributo].unique()
+
     for valor in valores_unicos:
+        st.markdown(f"{indent}▷ Particionando para **{mejor_atributo} = {valor}**")
         subset = data[data[mejor_atributo] == valor]
-        if subset.empty:
-            clase_mayoritaria = data[target].mode()[0]
-            nodo.hijos[valor] = NodoDecision(es_hoja=True, clase=clase_mayoritaria)
-        else:
-            atributos_restantes = [a for a in atributos if a != mejor_atributo]
-            nodo.hijos[valor] = construir_arbol(subset, atributos_restantes, target)
+        atributos_restantes = [a for a in atributos if a != mejor_atributo]
+        nodo.hijos[valor] = construir_arbol_interactivo(subset, atributos_restantes, target, nivel+1)
     return nodo
 
 def extraer_reglas(nodo, camino=[]):
@@ -82,7 +103,7 @@ def dibujar_arbol(nodo, dot=None, padre=None, etiqueta=None, contador=[0]):
     return dot
 
 def procesar_arbol_decision():
-    st.title("🌳 Árbol de Decisión ID3 desde cero")
+    st.title("🌳 Árbol de Decisión ID3 con explicación paso a paso")
 
     uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
     if uploaded_file is None:
@@ -101,14 +122,16 @@ def procesar_arbol_decision():
     target_col = st.selectbox("Selecciona la variable a predecir (target)", columnas)
     input_cols = st.multiselect("Selecciona las variables de entrada (features)", [col for col in columnas if col != target_col])
 
-    if st.button("Generar árbol ID3"):
+    if st.button("Generar árbol ID3 con explicación"):
         if not input_cols:
             st.error("Selecciona al menos una variable de entrada.")
             return
 
         df_model = df[input_cols + [target_col]].astype(str)
 
-        arbol = construir_arbol(df_model, input_cols, target_col)
+        st.markdown("## Construcción recursiva del árbol")
+        arbol = construir_arbol_interactivo(df_model, input_cols, target_col)
+
         st.success("Árbol construido correctamente.")
 
         reglas = extraer_reglas(arbol)
