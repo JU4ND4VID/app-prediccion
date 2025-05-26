@@ -1,4 +1,5 @@
 import streamlit as st
+st.set_page_config(page_title="App de Predicción", layout="wide")
 
 # Mantener solo título y menú en sidebar
 st.sidebar.title("📂 Menú de algoritmos")
