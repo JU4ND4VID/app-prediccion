@@ -1,8 +1,7 @@
 import streamlit as st
 
-def mostrar_explicacion():
+def mostrar_explicacion_id3():
     st.title("Explicación del algoritmo Árbol de Decisión ID3")
-
     st.markdown("""
     # Proceso de construcción del Árbol de Decisión ID3
 
@@ -11,10 +10,10 @@ def mostrar_explicacion():
 
     2. **Entropía**  
     Mide la impureza o incertidumbre de un conjunto de datos.  
-    Fórmula:
-    """)
-    st.latex(r"Entropia(S) = - \sum_{i=1}^c p_i \log_2(p_i)")
-    st.markdown("""
+    Fórmula:  
+    $$
+    Entropía(S) = - \sum_{i=1}^c p_i \log_2(p_i)
+    $$
     donde:  
     - \(S\) es el conjunto de datos,  
     - \(c\) es el número de clases,  
@@ -25,14 +24,14 @@ def mostrar_explicacion():
 
     3. **Ganancia de Información**  
     Mide cuánto reduce la entropía un atributo al dividir los datos.  
-    Fórmula:
-    """)
-    st.latex(r"Ganancia(S, A) = Entropia(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|} \cdot Entropia(S_v)")
-    st.markdown("""
+    Fórmula:  
+    $$
+    Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|} Entropía(S_v)
+    $$
     donde:  
     - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
 
-    Elegimos el atributo con **máxima ganancia** para dividir.
+    Elegimos el atributo con máxima ganancia para dividir.
 
     4. **Proceso Recursivo**  
     Calcula la entropía y ganancia para cada atributo.  
@@ -49,7 +48,7 @@ def mostrar_explicacion():
 
     6. **Extracción de Reglas**  
     Cada camino desde la raíz hasta una hoja representa una regla.  
-    La regla concatena las condiciones de cada nodo en el camino.
+    La regla concatena las condiciones de cada nodo en el camino.  
 
     Ejemplo:  
     `Si Nivel académico = Magíster y Estrato socioeconómico = Medio y Área de estudio = Ingeniería, entonces Categoría = Titular`
