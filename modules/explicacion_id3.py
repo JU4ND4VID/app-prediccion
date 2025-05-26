@@ -6,15 +6,15 @@ def mostrar_explicacion_id3():
     st.markdown("""
     # Proceso de construcción del Árbol de Decisión ID3
 
-    1. **Introducción ZZZZZZZ**  
+    1. **Introducción**  
     El algoritmo ID3 construye un árbol de decisión que clasifica datos usando el criterio de máxima ganancia de información, basada en la entropía.
 
     2. **Entropía**  
     Mide la impureza o incertidumbre de un conjunto de datos.  
-    Fórmula:  
-    $$
-    Entropía(S) = - \sum_{i=1}^c p_i \log_2(p_i)
-    $$
+    Fórmula:
+    """)
+    st.latex("Entropía(S) = - \\sum_{i=1}^c p_i \\log_2(p_i)")
+    st.markdown("""
     donde:  
     - \(S\) es el conjunto de datos,  
     - \(c\) es el número de clases,  
@@ -25,10 +25,10 @@ def mostrar_explicacion_id3():
 
     3. **Ganancia de Información**  
     Mide cuánto reduce la entropía un atributo al dividir los datos.  
-    Fórmula:  
-    $$
-    Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|} \cdot Entropía(S_v)
-    $$
+    Fórmula:
+    """)
+    st.latex("Ganancia(S, A) = Entropía(S) - \\sum_{v \\in Valores(A)} \\frac{|S_v|}{|S|} \\cdot Entropía(S_v)")
+    st.markdown("""
     donde:  
     - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
 
@@ -55,5 +55,6 @@ def mostrar_explicacion_id3():
     `Si Nivel académico = Magíster y Estrato socioeconómico = Medio y Área de estudio = Ingeniería, entonces Categoría = Titular`
     """)
 
-# Para usar esta función simplemente llamas:
-# mostrar_explicacion_id3()
+# Ejemplo de uso
+if __name__ == "__main__":
+    mostrar_explicacion_id3()
