@@ -22,11 +22,13 @@ def procesar_regresion_lineal():
     x_col = st.selectbox("Selecciona la variable independiente (X)", columnas)
     y_col = st.selectbox("Selecciona la variable dependiente (Y)", [col for col in columnas if col != x_col])
 
-    # Inicializamos en session_state si no existe
     if 'modelo_calculado' not in st.session_state:
         st.session_state['modelo_calculado'] = False
 
-    if st.button("Calcular regresión paso a paso"):
+    calcular = st.button("Calcular regresión paso a paso")
+
+    if calcular or st.session_state['modelo_calculado']:
+        # Si ya está calculado, o acaba de pulsar calcular, ejecuta los pasos:
         try:
             X = df[x_col].values
             Y = df[y_col].values
@@ -75,7 +77,6 @@ def procesar_regresion_lineal():
             st.markdown("### Paso 6: Ecuación de regresión")
             st.markdown(f"Y = {beta_0:.4f} + {beta_1:.4f} * X")
 
-            # Guardamos en session_state los coeficientes para usar después
             st.session_state['beta_0'] = beta_0
             st.session_state['beta_1'] = beta_1
             st.session_state['x_col'] = x_col
@@ -85,7 +86,6 @@ def procesar_regresion_lineal():
         except Exception as e:
             st.error(f"Error en el cálculo: {str(e)}")
 
-    # Si el modelo ya fue calculado, mostramos el formulario para predicción
     if st.session_state['modelo_calculado']:
         st.markdown("### Paso 7: Predicción")
         with st.form(key='form_prediccion'):
