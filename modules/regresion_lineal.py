@@ -22,6 +22,10 @@ def procesar_regresion_lineal():
     x_col = st.selectbox("Selecciona la variable independiente (X)", columnas)
     y_col = st.selectbox("Selecciona la variable dependiente (Y)", [col for col in columnas if col != x_col])
 
+    # Inicializamos en session_state si no existe
+    if 'modelo_calculado' not in st.session_state:
+        st.session_state['modelo_calculado'] = False
+
     if st.button("Calcular regresión paso a paso"):
         try:
             X = df[x_col].values
@@ -71,18 +75,26 @@ def procesar_regresion_lineal():
             st.markdown("### Paso 6: Ecuación de regresión")
             st.markdown(f"Y = {beta_0:.4f} + {beta_1:.4f} * X")
 
-            st.markdown("### Paso 7: Predicción")
-
-            with st.form(key='form_prediccion'):
-                nuevo_valor = st.number_input(f"Ingrese un valor para {x_col} para predecir {y_col}:", value=0.0)
-                submit_button = st.form_submit_button(label='Calcular predicción')
-
-            if submit_button:
-                prediccion = beta_0 + beta_1 * nuevo_valor
-                st.success(f"Predicción para {x_col} = {nuevo_valor:.2f} ➤ {y_col} = {prediccion:.2f}")
+            # Guardamos en session_state los coeficientes para usar después
+            st.session_state['beta_0'] = beta_0
+            st.session_state['beta_1'] = beta_1
+            st.session_state['x_col'] = x_col
+            st.session_state['y_col'] = y_col
+            st.session_state['modelo_calculado'] = True
 
         except Exception as e:
             st.error(f"Error en el cálculo: {str(e)}")
+
+    # Si el modelo ya fue calculado, mostramos el formulario para predicción
+    if st.session_state['modelo_calculado']:
+        st.markdown("### Paso 7: Predicción")
+        with st.form(key='form_prediccion'):
+            nuevo_valor = st.number_input(f"Ingrese un valor para {st.session_state['x_col']} para predecir {st.session_state['y_col']}:", value=0.0)
+            submit_button = st.form_submit_button(label='Calcular predicción')
+
+        if submit_button:
+            prediccion = st.session_state['beta_0'] + st.session_state['beta_1'] * nuevo_valor
+            st.success(f"Predicción para {st.session_state['x_col']} = {nuevo_valor:.2f} ➤ {st.session_state['y_col']} = {prediccion:.2f}")
 
 def run():
     procesar_regresion_lineal()

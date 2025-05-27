@@ -3,7 +3,7 @@ import streamlit as st
 def mostrar_explicacion_id3():
     st.title("Explicación del algoritmo Árbol de Decisión ID3")
 
-    st.markdown("""
+    st.markdown(r"""
     # Proceso de construcción del Árbol de Decisión ID3
 
     1. **Introducción**  
@@ -14,7 +14,7 @@ def mostrar_explicacion_id3():
     Fórmula:
     """)
     st.latex("Entropía(S) = - \\sum_{i=1}^c p_i \\log_2(p_i)")
-    st.markdown("""
+    st.markdown(r"""
     donde:  
     - \(S\) es el conjunto de datos,  
     - \(c\) es el número de clases,  
@@ -28,7 +28,7 @@ def mostrar_explicacion_id3():
     Fórmula:
     """)
     st.latex("Ganancia(S, A) = Entropía(S) - \\sum_{v \\in Valores(A)} \\frac{|S_v|}{|S|} \\cdot Entropía(S_v)")
-    st.markdown("""
+    st.markdown(r"""
     donde:  
     - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
 
