@@ -123,7 +123,6 @@ def predecir(nodo, ejemplo):
     if valor == '?' or valor not in nodo.hijos:
         # Elegir la rama con más hijos (heurística simple)
         if nodo.hijos:
-            # Buscar hijo con mayor número de ejemplos (heurística simple: el que tenga más ramas hijas)
             valor = max(nodo.hijos.keys(), key=lambda v: len(nodo.hijos[v].hijos) if not nodo.hijos[v].es_hoja else 0)
         else:
             return None
@@ -170,13 +169,18 @@ def procesar_arbol_decision():
         dot = dibujar_arbol(arbol)
         st.graphviz_chart(dot)
 
-        # Interfaz para predicción manual con posible '?'
+        # Prueba de predicción con formulario para evitar recarga
         st.subheader("🧪 Prueba de predicción con valores con '?'")
-        ejemplo = {}
-        for col in input_cols:
-            ejemplo[col] = st.text_input(f"Ingrese valor para {col} (use '?' para desconocido)", '?')
+        with st.form(key='form_prediccion'):
+            ejemplo = {}
+            for col in input_cols:
+                opciones = list(df_model[col].unique())
+                if '?' not in opciones:
+                    opciones.append('?')
+                ejemplo[col] = st.selectbox(f"Selecciona valor para {col} (o '?' para desconocido)", opciones, index=opciones.index('?'))
+            submit_button = st.form_submit_button(label="Predecir categoría para el ejemplo ingresado")
 
-        if st.button("Predecir categoría para el ejemplo ingresado"):
+        if submit_button:
             prediccion = predecir(arbol, ejemplo)
             if prediccion is None:
                 st.error("No se pudo predecir para el ejemplo dado.")
