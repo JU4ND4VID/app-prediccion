@@ -15,7 +15,7 @@ def k_means_iterativo(X, k, max_iter=100):
     centroides = inicializar_centroides(X, k)
     asignaciones = np.full(shape=len(X), fill_value=-1)
     for iter_num in range(1, max_iter+1):
-        distancias = np.array([euclidean_distance(X, c) for c in centroides]).T  # shape (n_samples, k)
+        distancias = np.array([euclidean_distance(X, c) for c in centroides]).T
         nuevas_asignaciones = np.argmin(distancias, axis=1)
         if np.array_equal(asignaciones, nuevas_asignaciones):
             return centroides, asignaciones, iter_num
@@ -27,7 +27,7 @@ def k_means_iterativo(X, k, max_iter=100):
 
 def mostrar_grafica_pca(X, asignaciones, centroides, titulo):
     if X.shape[1] < 2:
-        st.warning("No es posible realizar PCA con menos de dos características.")
+        st.warning("PCA requiere al menos dos columnas numéricas para la visualización.")
         return
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(X)
@@ -70,9 +70,10 @@ def procesar_k_means():
         st.error("No se encontraron columnas numéricas para clustering.")
         return
 
+    # CAMBIO: mínimo 1 columna numérica para que funcione con tu dataset
     x_cols = st.multiselect("Selecciona columnas numéricas para clustering", num_cols, default=num_cols)
-    if len(x_cols) < 2:
-        st.warning("Selecciona al menos dos columnas numéricas para realizar PCA y mostrar gráfica.")
+    if len(x_cols) < 1:
+        st.warning("Selecciona al menos una columna numérica para realizar clustering.")
         return
 
     cat_cols = [col for col in columnas if pd.api.types.is_object_dtype(df[col]) or pd.api.types.is_categorical_dtype(df[col])]
@@ -114,7 +115,11 @@ def procesar_k_means():
         st.markdown("### Asignaciones")
         st.dataframe(pd.DataFrame({"Índice": df.index, "Asignación cluster": nuevas_asignaciones}).head(10))
 
-        mostrar_grafica_pca(X, nuevas_asignaciones, centroides, f"Clusters iteración {i}")
+        # Mostrar gráfica solo si hay al menos 2 columnas numéricas
+        if len(x_cols) >= 2:
+            mostrar_grafica_pca(X, nuevas_asignaciones, centroides, f"Clusters iteración {i}")
+        else:
+            st.info("Se requiere al menos dos columnas numéricas para visualizar PCA.")
 
         if asignaciones_previas is not None and np.array_equal(nuevas_asignaciones, asignaciones_previas):
             st.success(f"Convergencia alcanzada en iteración {i}")
