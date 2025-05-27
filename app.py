@@ -19,7 +19,6 @@ if mostrar_explicacion:
     else:
         st.warning("Explicación no disponible para esta opción.")
 else:
-    # Aquí cargas y ejecutas el módulo funcional, por ejemplo:
     if opcion == "Árbol de Decisión":
         from modules import arbol_decision
         arbol_decision.run()

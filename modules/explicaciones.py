@@ -1,74 +1,9 @@
 import streamlit as st
 
-
-
-
-
-
-
-
-
-
-def mostrar_explicacion_id3():
-    st.title("Explicación del algoritmo Árbol de Decisión ID3")
-
-    st.markdown(r"""
-    # Proceso de construcción del Árbol de Decisión ID3
-
-    1. **Introducción**  
-    El algoritmo ID3 construye un árbol de decisión que clasifica datos usando el criterio de máxima ganancia de información, basada en la entropía.
-
-    2. **Entropía**  
-    Mide la impureza o incertidumbre de un conjunto de datos.  
-    Fórmula:
-    """)
-    st.latex("Entropía(S) = - \\sum_{i=1}^c p_i \\log_2(p_i)")
-    st.markdown(r"""
-    donde:  
-    - \(S\) es el conjunto de datos,  
-    - \(c\) es el número de clases,  
-    - \(p_i\) es la proporción de ejemplos en la clase \(i\).
-
-    Si todos los datos pertenecen a una sola clase, la entropía es 0 (conjunto puro).  
-    Si las clases están distribuidas uniformemente, la entropía es máxima.
-
-    3. **Ganancia de Información**  
-    Mide cuánto reduce la entropía un atributo al dividir los datos.  
-    Fórmula:
-    """)
-    st.latex("Ganancia(S, A) = Entropía(S) - \\sum_{v \\in Valores(A)} \\frac{|S_v|}{|S|} \\cdot Entropía(S_v)")
-    st.markdown(r"""
-    donde:  
-    - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
-
-    Elegimos el atributo con **máxima ganancia** para dividir.
-
-    4. **Proceso Recursivo**  
-    Calcula la entropía y ganancia para cada atributo.  
-    Escoge el atributo con mayor ganancia para crear un nodo.  
-    Divide el conjunto según los valores del atributo.  
-    Repite recursivamente en cada subconjunto hasta que:  
-    - Todos los ejemplos son de la misma clase (entropía = 0).  
-    - No quedan más atributos para dividir.
-
-    5. **Construcción del Árbol**  
-    El nodo raíz es el atributo con mayor ganancia.  
-    Cada rama corresponde a un valor del atributo.  
-    Las hojas contienen las clases finales.
-
-    6. **Extracción de Reglas**  
-    Cada camino desde la raíz hasta una hoja representa una regla.  
-    La regla concatena las condiciones de cada nodo en el camino.  
-
-    Ejemplo:  
-    `Si Nivel académico = Magíster y Estrato socioeconómico = Medio y Área de estudio = Ingeniería, entonces Categoría = Titular`
-    """)
-
-
 def mostrar_explicacion_regresion_lineal():
     st.title("📈 Explicación paso a paso de Regresión Lineal Simple")
 
-    st.markdown("""
+    st.markdown(r"""
     ### ¿Qué es la Regresión Lineal Simple?
 
     Es un método estadístico para modelar la relación entre una variable dependiente \(Y\) y una variable independiente \(X\) usando una línea recta.
@@ -77,7 +12,7 @@ def mostrar_explicacion_regresion_lineal():
     """)
     st.latex(r"Y = \beta_0 + \beta_1 X + \varepsilon")
 
-    st.markdown("""
+    st.markdown(r"""
     Donde:  
     - \(\beta_0\) es el intercepto (ordenada al origen).  
     - \(\beta_1\) es la pendiente (cambio esperado en \(Y\) por unidad de cambio en \(X\)).  
@@ -168,11 +103,77 @@ def mostrar_explicacion_regresion_lineal():
 
     """)
 
+def mostrar_explicacion_id3():
+    st.title("Explicación del algoritmo Árbol de Decisión ID3")
+    st.markdown(r"""
+    # Proceso de construcción del Árbol de Decisión ID3
+
+    1. **Introducción**  
+    El algoritmo ID3 construye un árbol de decisión que clasifica datos usando el criterio de máxima ganancia de información, basada en la entropía.
+
+    2. **Entropía**  
+    Mide la impureza o incertidumbre de un conjunto de datos.  
+    Fórmula:
+    """)
+    st.latex(r"Entropía(S) = - \sum_{i=1}^c p_i \log_2(p_i)")
+    st.markdown(r"""
+    donde:  
+    - \(S\) es el conjunto de datos,  
+    - \(c\) es el número de clases,  
+    - \(p_i\) es la proporción de ejemplos en la clase \(i\).
+
+    Si todos los datos pertenecen a una sola clase, la entropía es 0 (conjunto puro).  
+    Si las clases están distribuidas uniformemente, la entropía es máxima.
+
+    3. **Ganancia de Información**  
+    Mide cuánto reduce la entropía un atributo al dividir los datos.  
+    Fórmula:
+    """)
+    st.latex(r"Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|} \cdot Entropía(S_v)")
+    st.markdown(r"""
+    donde:  
+    - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
+
+    Elegimos el atributo con **máxima ganancia** para dividir.
+
+    4. **Proceso Recursivo**  
+    Calcula la entropía y ganancia para cada atributo.  
+    Escoge el atributo con mayor ganancia para crear un nodo.  
+    Divide el conjunto según los valores del atributo.  
+    Repite recursivamente en cada subconjunto hasta que:  
+    - Todos los ejemplos son de la misma clase (entropía = 0).  
+    - No quedan más atributos para dividir.
+
+    5. **Construcción del Árbol**  
+    El nodo raíz es el atributo con mayor ganancia.  
+    Cada rama corresponde a un valor del atributo.  
+    Las hojas contienen las clases finales.
+
+    6. **Extracción de Reglas**  
+    Cada camino desde la raíz hasta una hoja representa una regla.  
+    La regla concatena las condiciones de cada nodo en el camino.  
+
+    Ejemplo:  
+    `Si Nivel académico = Magíster y Estrato socioeconómico = Medio y Área de estudio = Ingeniería, entonces Categoría = Titular`
+    """)
 
 def mostrar_explicacion_k_means():
-    st.title("Explicación K-means")
-    st.markdown("""
-    K-means es un algoritmo de clustering que particiona los datos en K grupos basados en la distancia entre puntos y centroides.
-    ...
+    st.title("Explicación del algoritmo K-means")
+    st.markdown(r"""
+    K-means es un algoritmo de clustering que particiona los datos en \(K\) grupos basados en la distancia a centroides.
+
+    1. **Inicialización:**  
+    Se eligen \(K\) centroides iniciales (aleatorios o según heurísticas).
+
+    2. **Asignación:**  
+    Cada punto se asigna al cluster con el centroide más cercano.
+
+    3. **Actualización:**  
+    Se recalculan los centroides como la media de los puntos asignados.
+
+    4. **Repetición:**  
+    Se repiten los pasos 2 y 3 hasta que los centroides no cambien significativamente.
+
+    El objetivo es minimizar la suma de las distancias cuadráticas dentro de cada cluster.
     """)
-    # Contenido detallado de la explicación K-means
+
