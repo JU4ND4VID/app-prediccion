@@ -72,9 +72,14 @@ def procesar_regresion_lineal():
             st.markdown(f"Y = {beta_0:.4f} + {beta_1:.4f} * X")
 
             st.markdown("### Paso 7: Predicción")
-            nuevo_valor = st.number_input(f"Ingrese un valor para {x_col} para predecir {y_col}:", value=0.0)
-            prediccion = beta_0 + beta_1 * nuevo_valor
-            st.success(f"Predicción para {x_col} = {nuevo_valor:.2f} ➤ {y_col} = {prediccion:.2f}")
+
+            with st.form(key='form_prediccion'):
+                nuevo_valor = st.number_input(f"Ingrese un valor para {x_col} para predecir {y_col}:", value=0.0)
+                submit_button = st.form_submit_button(label='Calcular predicción')
+
+            if submit_button:
+                prediccion = beta_0 + beta_1 * nuevo_valor
+                st.success(f"Predicción para {x_col} = {nuevo_valor:.2f} ➤ {y_col} = {prediccion:.2f}")
 
         except Exception as e:
             st.error(f"Error en el cálculo: {str(e)}")
