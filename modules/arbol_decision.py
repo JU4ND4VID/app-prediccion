@@ -139,6 +139,6 @@ def procesar_arbol_decision():
         for i, regla in enumerate(reglas, 1):
             st.markdown(f"**Regla {i}:** {regla}")
 
-        st.subheader("🌳 Diagrama del Árbol (estilo profesor)")
+        st.subheader("🌳 Diagrama del Árbol ")
         dot = dibujar_arbol(arbol)
         st.graphviz_chart(dot)
