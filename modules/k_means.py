@@ -4,38 +4,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 
-def imputar_valores(df, cols_num):
-    for c in cols_num:
-        if df[c].isnull().any():
-            media = df[c].mean()
-            df[c].fillna(media, inplace=True)
-    return df
+def euclidean_distance(a, b):
+    return np.linalg.norm(a - b, axis=1)
 
-def inicializar_centroides_por_clase(df, cols_num, col_clase):
-    clases = df[col_clase].dropna().unique()
+def inicializar_centroides_por_clase(df_known, x_cols, cat_col):
+    clases = df_known[cat_col].unique()
     centroides = []
     for c in clases:
-        media = df.loc[df[col_clase] == c, cols_num].mean().values
-        centroides.append(media)
-    return np.array(centroides), clases
+        pts = df_known.loc[df_known[cat_col] == c, x_cols]
+        centroides.append(pts.mean().to_numpy())
+    return np.vstack(centroides), np.array(clases)
 
-def calcular_distancias(X, centroides):
-    return np.linalg.norm(X[:, None] - centroides, axis=2)
+def inicializar_centroides_aleatorios(X_known, k):
+    idx = np.random.choice(len(X_known), k, replace=False)
+    return X_known[idx]
 
-def mostrar_grafica_pca(X, asignaciones, centroides, titulo):
+def mostrar_grafica_pca(X, asign_idx, centroides, titulo):
     if X.shape[1] < 2:
         st.warning("PCA requiere al menos dos columnas numéricas para visualizar.")
         return
     pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(X)
-    centroides_pca = pca.transform(centroides)
-
+    X2 = pca.fit_transform(X)
+    C2 = pca.transform(centroides)
     plt.figure(figsize=(7,5))
-    scatter = plt.scatter(X_pca[:,0], X_pca[:,1], c=asignaciones, cmap='tab10', s=60, alpha=0.7)
-    plt.scatter(centroides_pca[:,0], centroides_pca[:,1], c='black', s=200, marker='X')
+    scatter = plt.scatter(X2[:,0], X2[:,1], c=asign_idx, cmap='tab10', s=60, alpha=0.7)
+    plt.scatter(C2[:,0], C2[:,1], c='black', s=200, marker='X')
     plt.title(titulo)
-    plt.xlabel('Componente Principal 1')
-    plt.ylabel('Componente Principal 2')
+    plt.xlabel('PC 1')
+    plt.ylabel('PC 2')
     plt.legend(*scatter.legend_elements(), title="Clusters")
     plt.grid(True)
     st.pyplot(plt)
@@ -43,105 +39,123 @@ def mostrar_grafica_pca(X, asignaciones, centroides, titulo):
 
 def procesar_k_means():
     st.title("📊 K-means clustering paso a paso")
-
-    uploaded_file = st.file_uploader("Sube archivo CSV o Excel", type=["csv", "xlsx"])
-    if uploaded_file is None:
+    # 1) Subida y lectura
+    uploaded = st.file_uploader("Sube archivo CSV o Excel", type=["csv","xlsx"])
+    if not uploaded:
         st.info("Sube un archivo para continuar.")
         return
-
     try:
-        if uploaded_file.name.endswith(".csv"):
-            df = pd.read_csv(uploaded_file, na_values=["?"])
+        if uploaded.name.endswith(".csv"):
+            df = pd.read_csv(uploaded, na_values=["?"])
         else:
-            df = pd.read_excel(uploaded_file, na_values=["?"])
+            df = pd.read_excel(uploaded, na_values=["?"])
     except Exception as e:
-        st.error(f"Error al cargar archivo: {e}")
+        st.error(f"Error cargando archivo: {e}")
         return
 
     st.subheader("Vista previa del dataset")
     st.dataframe(df)
 
+    # 2) Selección de columnas numéricas y categórica
     columnas = df.columns.tolist()
-    num_cols = [col for col in columnas if pd.api.types.is_numeric_dtype(df[col])]
+    num_cols = [c for c in columnas if pd.api.types.is_numeric_dtype(df[c])]
     if not num_cols:
-        st.error("No se encontraron columnas numéricas para clustering.")
+        st.error("No se encontraron columnas numéricas.")
         return
 
-    x_cols = st.multiselect("Selecciona columnas numéricas para clustering", num_cols, default=num_cols)
+    x_cols = st.multiselect("Columnas numéricas para clustering", num_cols, default=num_cols)
     if len(x_cols) < 1:
-        st.warning("Selecciona al menos una columna numérica para clustering.")
+        st.warning("Selecciona al menos una columna numérica.")
         return
 
-    cat_cols = [col for col in columnas if pd.api.types.is_object_dtype(df[col]) or pd.api.types.is_categorical_dtype(df[col])]
+    cat_cols = [c for c in columnas 
+                if pd.api.types.is_object_dtype(df[c]) or pd.api.types.is_categorical_dtype(df[c])]
     k = 2
     cat_col = None
     if cat_cols:
-        cat_col = st.selectbox("Selecciona columna categórica para definir número de clusters (opcional)", [None] + cat_cols)
+        cat_col = st.selectbox("Columna categórica (opcional)", [None]+cat_cols)
         if cat_col:
             k = df[cat_col].nunique()
     else:
-        st.info("No se encontró columna categórica, se usará k=2 por defecto.")
+        st.info("Sin columna categórica, usaré k=2.")
 
-    df = imputar_valores(df, x_cols)
-    X = df[x_cols].values
+    # 3) Separar filas conocidas y faltantes
+    mask_known = df[x_cols].notna().all(axis=1)
+    df_known   = df.loc[mask_known].copy()
+    df_missing = df.loc[~mask_known].copy()
 
-    if not st.button("Ejecutar K-means paso a paso"):
-        return
+    X_known = df_known[x_cols].to_numpy()
 
+    # 4) Inicializar centroides
     if cat_col:
-        centroides, clases = inicializar_centroides_por_clase(df, x_cols, cat_col)
+        centroides, clases = inicializar_centroides_por_clase(df_known, x_cols, cat_col)
     else:
-        indices = np.random.choice(len(X), k, replace=False)
-        centroides = X[indices]
+        centroides = inicializar_centroides_aleatorios(X_known, k)
         clases = np.arange(k)
 
     asign_prev = None
     convergencia = False
     max_iter = 20
 
-    for i in range(1, max_iter + 1):
-        distancias = calcular_distancias(X, centroides)
-        asign_idx = np.argmin(distancias, axis=1)
-        asignaciones = clases[asign_idx]
+    # 5) Iterar K-means
+    for it in range(1, max_iter+1):
+        # calcular distancias y asignaciones
+        dist = np.vstack([euclidean_distance(X_known, c) for c in centroides]).T  # n×k
+        asign_idx = np.argmin(dist, axis=1)
+        asign = clases[asign_idx]
 
-        tabla = pd.DataFrame(X, columns=x_cols)
-        for idx, c in enumerate(clases):
-            tabla[f"Distancia Cluster {c}"] = distancias[:, idx].round(2)
-        tabla['Cluster Más Cercano'] = asignaciones
-
-        st.markdown(f"## Iteración {i}")
+        # mostrar tabla de distancias y asignaciones
+        tabla = df_known[x_cols].reset_index(drop=True)
+        for j,c in enumerate(clases):
+            tabla[f"Distancia Cluster {c}"] = dist[:,j].round(2)
+        tabla["Cluster Más Cercano"] = asign
+        st.markdown(f"## Iteración {it}")
         st.dataframe(tabla)
 
+        # mostrar centroides
+        cent_df = pd.DataFrame(centroides, columns=x_cols)
+        cent_df["Cluster"] = clases
         st.markdown("### Centroides")
-        centroides_df = pd.DataFrame(centroides, columns=x_cols)
-        centroides_df['Cluster'] = clases
-        st.dataframe(centroides_df)
+        st.dataframe(cent_df.round(2))
 
+        # gráfica PCA si aplica
+        if len(x_cols) >= 2:
+            mostrar_grafica_pca(X_known, asign_idx, centroides, f"Clusters iteración {it}")
+
+        # convergencia
         if asign_prev is not None and np.array_equal(asign_idx, asign_prev):
-            st.success(f"Convergencia alcanzada en iteración {i}")
+            st.success(f"Convergencia en iteración {it}")
             convergencia = True
             break
 
         asign_prev = asign_idx.copy()
 
-        nuevos_centroides = []
-        for idx, c in enumerate(clases):
-            puntos = X[asign_idx == idx]
-            if len(puntos) > 0:
-                nuevos_centroides.append(puntos.mean(axis=0))
-            else:
-                nuevos_centroides.append(centroides[idx])
-        centroides = np.array(nuevos_centroides)
-
-        if len(x_cols) >= 2:
-            mostrar_grafica_pca(X, asign_idx, centroides, f"Clusters iteración {i}")
+        # recalcular centroides
+        nuevos = []
+        for j in range(len(centroides)):
+            pts = X_known[asign_idx == j]
+            nuevos.append(pts.mean(axis=0) if len(pts)>0 else centroides[j])
+        centroides = np.vstack(nuevos)
 
     if not convergencia:
-        st.warning(f"No se alcanzó convergencia en {max_iter} iteraciones.")
+        st.warning(f"No convergió en {max_iter} iteraciones.")
 
-    df['Cluster asignado'] = asignaciones
+    # 6) Imputar filas faltantes con el centroide de su clase
+    if cat_col and not df_missing.empty:
+        df_missing = df_missing.copy()
+        df_missing["Cluster asignado"] = df_missing[cat_col].values
+        # mapear clase → vector centroide
+        mapa = {c: centroides[i] for i,c in enumerate(clases)}
+        for col in x_cols:
+            df_missing[col] = df_missing["Cluster asignado"].map(lambda cl: mapa[cl][x_cols.index(col)])
+        st.markdown("### Imputación de valores faltantes")
+        st.dataframe(df_missing[[*x_cols, cat_col, "Cluster asignado"]].round(2))
+
+    # 7) Resultado final
     st.markdown("### Resultado final")
-    st.dataframe(df[[*x_cols, 'Cluster asignado']])
+    df_known["Cluster asignado"] = clases[asign_idx]
+    resultado = pd.concat([df_known, df_missing], axis=0)
+    st.dataframe(resultado.reset_index(drop=True).round(2))
 
 def run():
     procesar_k_means()
