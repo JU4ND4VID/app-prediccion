@@ -6,12 +6,12 @@ from graphviz import Digraph
 def calcular_entropia(etiquetas):
     valores, conteos = np.unique(etiquetas, return_counts=True)
     probabilidades = conteos / conteos.sum()
-    entropia = -np.sum(probabilidades * np.log2(probabilidades))
+    entropia = -np.sum(probabilidades * np.log2(probabilidades + 1e-9))  # Evitar log(0)
     return entropia
 
 def ganancia_informacion(data, atributo, target):
     entropia_total = calcular_entropia(data[target])
-    valores, conteos = np.unique(data[atributo], return_counts=True)
+    valores, conteos = np.unique(data[atributo].dropna(), return_counts=True)
     entropia_condicional = 0
     detalles = []
     for v, c in zip(valores, conteos):
@@ -37,6 +37,13 @@ class NodoDecision:
 
 def construir_arbol_interactivo(data, atributos, target, nivel=0):
     indent = "    " * nivel
+
+    # Eliminar filas con target nulo o '?'
+    data = data[data[target].notna() & (data[target] != '?')]
+    if len(data) == 0:
+        st.markdown(f"{indent}⚠️ No hay datos para construir el nodo, se asigna clase 'Desconocido'")
+        return NodoDecision(es_hoja=True, clase="Desconocido")
+
     if len(data[target].unique()) == 1:
         st.markdown(f"{indent}📌 Nodo hoja con clase: **{data[target].iloc[0]}**")
         return NodoDecision(es_hoja=True, clase=data[target].iloc[0])
@@ -51,7 +58,12 @@ def construir_arbol_interactivo(data, atributos, target, nivel=0):
 
     ganancias = {}
     for atributo in atributos:
-        ganancia, detalles = ganancia_informacion(data, atributo, target)
+        # Ignorar filas con NaN o '?' en atributo para cálculo
+        data_filtrada = data[data[atributo].notna() & (data[atributo] != '?')]
+        if len(data_filtrada) == 0:
+            ganancias[atributo] = 0
+            continue
+        ganancia, detalles = ganancia_informacion(data_filtrada, atributo, target)
         st.markdown(f"{indent}**Atributo '{atributo}'**: Ganancia = **{ganancia:.4f}**")
         df_detalles = pd.DataFrame(detalles)
         st.dataframe(df_detalles)
@@ -61,13 +73,22 @@ def construir_arbol_interactivo(data, atributos, target, nivel=0):
     st.markdown(f"{indent}➡️ **Mejor atributo para dividir: '{mejor_atributo}'**\n")
 
     nodo = NodoDecision(atributo=mejor_atributo)
-    valores_unicos = data[mejor_atributo].unique()
+    valores_unicos = data[mejor_atributo].dropna().unique()
 
     for valor in valores_unicos:
+        if valor == '?':
+            continue
         st.markdown(f"{indent}▷ Particionando para **{mejor_atributo} = {valor}**")
         subset = data[data[mejor_atributo] == valor]
         atributos_restantes = [a for a in atributos if a != mejor_atributo]
         nodo.hijos[valor] = construir_arbol_interactivo(subset, atributos_restantes, target, nivel+1)
+
+    # Manejar casos con valores faltantes ('?') en el atributo de división como nodo hoja con clase mayoritaria
+    if any((data[mejor_atributo] == '?')):
+        clase_mayoritaria = data[target].mode()[0]
+        st.markdown(f"{indent}▷ Valores faltantes '?' en '{mejor_atributo}', asignando clase mayoritaria: **{clase_mayoritaria}**")
+        nodo.hijos['?'] = NodoDecision(es_hoja=True, clase=clase_mayoritaria)
+
     return nodo
 
 def extraer_reglas(nodo, camino=[]):
@@ -86,21 +107,33 @@ def dibujar_arbol(nodo, dot=None, padre=None, etiqueta=None, contador=[0]):
         dot.node(name='0', label='Inicio')
         contador[0] = 1
         padre = '0'
-    
+
     nodo_id = str(contador[0])
-    contador[0] +=1
-    
+    contador[0] += 1
+
     if nodo.es_hoja:
         dot.node(nodo_id, label=f"Categoría: {nodo.clase}", shape='box', style='filled', color='lightgreen')
     else:
         dot.node(nodo_id, label=f"{nodo.atributo}", shape='ellipse', style='filled', color='lightblue')
-    
+
     dot.edge(padre, nodo_id, label=etiqueta if etiqueta else "")
-    
+
     if not nodo.es_hoja:
         for valor, hijo in nodo.hijos.items():
             dibujar_arbol(hijo, dot, nodo_id, str(valor), contador)
     return dot
+
+def predecir(nodo, ejemplo):
+    if nodo.es_hoja:
+        return nodo.clase
+    valor = ejemplo.get(nodo.atributo, None)
+    if valor not in nodo.hijos or valor == '?' or valor is None or pd.isna(valor):
+        # Elegir la rama '?' si existe, si no la primera disponible
+        if '?' in nodo.hijos:
+            valor = '?'
+        else:
+            valor = next(iter(nodo.hijos.keys()))
+    return predecir(nodo.hijos[valor], ejemplo)
 
 def procesar_arbol_decision():
     st.title("🌳 Árbol de Decisión ID3 con explicación paso a paso")
@@ -109,7 +142,7 @@ def procesar_arbol_decision():
     if uploaded_file is None:
         st.info("Por favor, sube un archivo para continuar.")
         return
-    
+
     if uploaded_file.name.endswith(".csv"):
         df = pd.read_csv(uploaded_file)
     else:
@@ -127,7 +160,8 @@ def procesar_arbol_decision():
             st.error("Selecciona al menos una variable de entrada.")
             return
 
-        df_model = df[input_cols + [target_col]].astype(str)
+        # Reemplazar '?' por NaN para mejor manejo
+        df_model = df[input_cols + [target_col]].replace('?', np.nan).astype(str)
 
         st.markdown("## Construcción recursiva del árbol")
         arbol = construir_arbol_interactivo(df_model, input_cols, target_col)
@@ -143,5 +177,18 @@ def procesar_arbol_decision():
         dot = dibujar_arbol(arbol)
         st.graphviz_chart(dot)
 
+        # Ejemplo de predicción
+        st.subheader("🧪 Prueba de predicción con valores con '?'")
+        ejemplo = {}
+        for col in input_cols:
+            ejemplo[col] = st.text_input(f"Ingrese valor para {col} (use '?' para desconocido)", '?')
+
+        if st.button("Predecir categoría para el ejemplo ingresado"):
+            prediccion = predecir(arbol, ejemplo)
+            st.success(f"La predicción para el ejemplo ingresado es: **{prediccion}**")
+
 def run():
     procesar_arbol_decision()
+
+if __name__ == "__main__":
+    run()
