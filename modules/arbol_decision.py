@@ -134,7 +134,7 @@ def procesar_arbol_decision():
             df = pd.read_csv(uploaded_file)
         else:
             df = pd.read_excel(uploaded_file)
-        st.session_state['df'] = df  # Guardar dataset en sesión para persistencia
+        st.session_state['df'] = df
 
     if 'df' not in st.session_state:
         st.info("Por favor, sube un archivo para continuar.")
@@ -145,16 +145,9 @@ def procesar_arbol_decision():
     st.dataframe(df)
 
     columnas = df.columns.tolist()
-    if 'target_col' not in st.session_state:
-        st.session_state['target_col'] = None
-    if 'input_cols' not in st.session_state:
-        st.session_state['input_cols'] = []
 
     target_col = st.selectbox("Selecciona la variable a predecir (target)", columnas, index=0, key='target_col_select')
     input_cols = st.multiselect("Selecciona las variables de entrada (features)", [col for col in columnas if col != target_col], key='input_cols_select')
-
-    st.session_state['target_col'] = target_col
-    st.session_state['input_cols'] = input_cols
 
     if st.button("Generar árbol ID3 con explicación"):
         if not input_cols:
@@ -182,11 +175,28 @@ def procesar_arbol_decision():
 
         with st.form(key='form_prediccion'):
             ejemplo = {}
-            for idx, col in enumerate(st.session_state['input_cols']):
-                opciones = list(st.session_state['df_model'][col].unique())
-                if '?' not in opciones:
-                    opciones.append('?')
-                ejemplo[col] = st.selectbox(f"Selecciona valor para {col} (o '?' para desconocido)", opciones, index=opciones.index('?'), key=f'select_{col}_{idx}')
+            for idx, col in enumerate(input_cols):
+                raw_opciones = list(st.session_state['df_model'][col].unique())
+                # Limpiar duplicados ignorando mayúsculas/minúsculas y espacios
+                seen = set()
+                opciones_limpias = []
+                for val in raw_opciones:
+                    val_str = str(val).strip().lower()
+                    if val_str not in seen:
+                        seen.add(val_str)
+                        opciones_limpias.append(str(val).strip())
+
+                if '?' not in opciones_limpias:
+                    opciones_limpias.append('?')
+
+                default_idx = opciones_limpias.index('?')
+                ejemplo[col] = st.selectbox(
+                    f"Selecciona valor para {col} (o '?' para desconocido)",
+                    opciones_limpias,
+                    index=default_idx,
+                    key=f'select_{col}_{idx}'
+                )
+
             submit_button = st.form_submit_button(label="Predecir categoría para el ejemplo ingresado")
 
         if submit_button:
