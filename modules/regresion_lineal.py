@@ -79,7 +79,11 @@ def procesar_regresion_lineal():
 
             if submit_button:
                 prediccion = beta_0 + beta_1 * nuevo_valor
-                st.success(f"Predicción para {x_col} = {nuevo_valor:.2f} ➤ {y_col} = {prediccion:.2f}")
+                st.session_state['prediccion'] = (nuevo_valor, prediccion)
+
+            if 'prediccion' in st.session_state:
+                val, pred = st.session_state['prediccion']
+                st.success(f"Predicción para {x_col} = {val:.2f} ➤ {y_col} = {pred:.2f}")
 
         except Exception as e:
             st.error(f"Error en el cálculo: {str(e)}")
