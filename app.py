@@ -2,35 +2,48 @@ import streamlit as st
 from modules import explicaciones
 from modules import arbol_decision, regresion_lineal, k_means, regresion_multiple
 
-st.title("App de Algoritmos")
+st.set_page_config(page_title="App de Algoritmos", layout="wide")
 
-# Menú lateral para seleccionar el algoritmo a ejecutar
-opcion = st.sidebar.selectbox("Selecciona el algoritmo:", 
-                              ["Árbol de Decisión", "Regresión Lineal", "K-means", "Regresión Múltiple"])
+st.sidebar.title("📚 Explicaciones")
 
-# En la parte principal, mostramos botones independientes para explicaciones
-st.markdown("## Explicaciones")
-col1, col2, col3 = st.columns(3)
+explicacion_seleccionada = st.sidebar.radio(
+    "Selecciona la explicación a mostrar:",
+    (
+        "Ninguna",
+        "Árbol de Decisión",
+        "Regresión Lineal",
+        "K-means"
+    )
+)
 
-with col1:
-    if st.button("Explicación Árbol de Decisión"):
+st.sidebar.markdown("---")
+st.sidebar.title("🔧 Ejecutar Algoritmos")
+
+algoritmo_seleccionado = st.sidebar.selectbox(
+    "Selecciona el algoritmo para ejecutar:",
+    (
+        "Árbol de Decisión",
+        "Regresión Lineal",
+        "K-means",
+        "Regresión Múltiple"
+    )
+)
+
+# Mostrar la explicación seleccionada, si no es "Ninguna"
+if explicacion_seleccionada != "Ninguna":
+    if explicacion_seleccionada == "Árbol de Decisión":
         explicaciones.mostrar_explicacion_id3()
-
-with col2:
-    if st.button("Explicación Regresión Lineal"):
+    elif explicacion_seleccionada == "Regresión Lineal":
         explicaciones.mostrar_explicacion_regresion_lineal()
-
-with col3:
-    if st.button("Explicación K-means"):
+    elif explicacion_seleccionada == "K-means":
         explicaciones.mostrar_explicacion_k_means()
-
-# Ejecución del módulo seleccionado
-st.markdown("---")
-if opcion == "Árbol de Decisión":
-    arbol_decision.run()
-elif opcion == "Regresión Lineal":
-    regresion_lineal.run()
-elif opcion == "K-means":
-    k_means.run()
-elif opcion == "Regresión Múltiple":
-    regresion_multiple.run()
+else:
+    # Si no se muestra explicación, ejecutar el algoritmo seleccionado
+    if algoritmo_seleccionado == "Árbol de Decisión":
+        arbol_decision.run()
+    elif algoritmo_seleccionado == "Regresión Lineal":
+        regresion_lineal.run()
+    elif algoritmo_seleccionado == "K-means":
+        k_means.run()
+    elif algoritmo_seleccionado == "Regresión Múltiple":
+        regresion_multiple.run()
