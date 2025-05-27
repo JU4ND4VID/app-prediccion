@@ -11,7 +11,7 @@ def normalizar_texto(texto):
 
 def corregir_errores_ortograficos(valor):
     correcciones = {
-     
+        'ingnieria': 'ingenieria',
         # Añade aquí más correcciones si las detectas
     }
     return correcciones.get(valor, valor)
