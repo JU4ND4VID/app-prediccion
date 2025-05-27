@@ -1,40 +1,34 @@
 import streamlit as st
-import importlib
+from modules import explicaciones
 
-st.set_page_config(page_title="App de Predicción", layout="wide")
-
-st.sidebar.title("📂 Menú de algoritmos")
+st.sidebar.title("Menú de algoritmos")
 opcion = st.sidebar.selectbox(
     "Selecciona el algoritmo que deseas ejecutar:",
-    (
-        "Árbol de Decisión",
-        "K-means",
-        "Regresión Lineal",
-        "Regresión Múltiple",
-    )
+    ["Árbol de Decisión", "K-means", "Regresión Lineal", "Regresión Múltiple"]
 )
 
-mostrar_explicacion = st.sidebar.button("Mostrar explicación ID3")
+mostrar_explicacion = st.sidebar.button("Mostrar explicación")
 
 if mostrar_explicacion:
-    # Importa y ejecuta la función que muestra la explicación
-    from modules.explicacion_id3 import mostrar_explicacion_id3
-    mostrar_explicacion_id3()
-else:
-    modulos = {
-        "Árbol de Decisión": "modules.arbol_decision",
-        "K-means": "modules.k_means",
-        "Regresión Lineal": "modules.regresion_lineal",
-        "Regresión Múltiple": "modules.regresion_multiple",
-    }
-
-    modulo_seleccionado = modulos.get(opcion)
-
-    if modulo_seleccionado:
-        mod = importlib.import_module(modulo_seleccionado)
-        if hasattr(mod, "run"):
-            mod.run()
-        elif hasattr(mod, "procesar_arbol_decision"):
-            mod.procesar_arbol_decision()
+    if opcion == "Árbol de Decisión":
+        explicaciones.mostrar_explicacion_id3()
+    elif opcion == "Regresión Lineal":
+        explicaciones.mostrar_explicacion_regresion_lineal()
+    elif opcion == "K-means":
+        explicaciones.mostrar_explicacion_k_means()
     else:
-        st.warning("Selecciona una opción válida.")
+        st.warning("Explicación no disponible para esta opción.")
+else:
+    # Aquí cargas y ejecutas el módulo funcional, por ejemplo:
+    if opcion == "Árbol de Decisión":
+        from modules import arbol_decision
+        arbol_decision.run()
+    elif opcion == "Regresión Lineal":
+        from modules import regresion_lineal
+        regresion_lineal.run()
+    elif opcion == "K-means":
+        from modules import k_means
+        k_means.run()
+    elif opcion == "Regresión Múltiple":
+        from modules import regresion_multiple
+        regresion_multiple.run()
