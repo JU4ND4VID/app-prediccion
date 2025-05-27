@@ -254,22 +254,31 @@ def mostrar_explicacion_regresion_multiple():
     """)
 
 def mostrar_explicacion_k_means():
-    st.title("Explicación del algoritmo K-means")
+    st.title("📌 Explicación paso a paso del algoritmo K-means")
+
     st.markdown(r"""
-    K-means es un algoritmo de clustering que particiona los datos en \(K\) grupos basados en la distancia a centroides.
+    K-means es un algoritmo de clustering que agrupa datos en \(k\) clusters basados en la distancia a centroides.
 
-    1. **Inicialización:**  
-    Se eligen \(K\) centroides iniciales (aleatorios o según heurísticas).
+    ### Proceso general:
 
-    2. **Asignación:**  
-    Cada punto se asigna al cluster con el centroide más cercano.
+    1. Se elige el número de clusters \(k\).
+    2. Se inicializan los centroides (aleatoriamente o por métodos heurísticos).
+    3. Cada punto se asigna al cluster cuyo centroide está más cercano (usualmente distancia euclidiana).
+    4. Se recalculan los centroides como la media de los puntos asignados a cada cluster.
+    5. Se repiten los pasos 3 y 4 hasta que las asignaciones no cambien (convergencia).
+    
+    ### Características:
 
-    3. **Actualización:**  
-    Se recalculan los centroides como la media de los puntos asignados.
+    - Puede trabajar con datos multidimensionales.
+    - Es sensible a la inicialización de centroides.
+    - No garantiza un óptimo global, pero suele converger rápido.
+    - Es común usar reducción dimensional para visualizar clusters cuando hay muchas variables.
 
-    4. **Repetición:**  
-    Se repiten los pasos 2 y 3 hasta que los centroides no cambien significativamente.
+    ### Aplicaciones:
 
-    El objetivo es minimizar la suma de las distancias cuadráticas dentro de cada cluster.
+    - Segmentación de clientes.
+    - Agrupamiento de documentos.
+    - Detección de patrones en datos.
     """)
+
 
