@@ -4,30 +4,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 
-def euclidean_distance(a, b):
-    return np.linalg.norm(a - b, axis=1)
+def imputar_valores(df, cols_num):
+    for c in cols_num:
+        if df[c].isnull().any():
+            media = df[c].mean()
+            df[c].fillna(media, inplace=True)
+    return df
 
-def inicializar_centroides(X, k):
-    indices = np.random.choice(len(X), k, replace=False)
-    return X[indices]
+def inicializar_centroides_por_clase(df, cols_num, col_clase):
+    clases = df[col_clase].dropna().unique()
+    centroides = []
+    for c in clases:
+        media = df.loc[df[col_clase] == c, cols_num].mean().values
+        centroides.append(media)
+    return np.array(centroides), clases
 
-def k_means_iterativo(X, k, max_iter=100):
-    centroides = inicializar_centroides(X, k)
-    asignaciones = np.full(shape=len(X), fill_value=-1)
-    for iter_num in range(1, max_iter+1):
-        distancias = np.array([euclidean_distance(X, c) for c in centroides]).T
-        nuevas_asignaciones = np.argmin(distancias, axis=1)
-        if np.array_equal(asignaciones, nuevas_asignaciones):
-            return centroides, asignaciones, iter_num
-        asignaciones = nuevas_asignaciones
-        for i in range(k):
-            if np.any(asignaciones == i):
-                centroides[i] = X[asignaciones == i].mean(axis=0)
-    return centroides, asignaciones, max_iter
+def calcular_distancias(X, centroides):
+    return np.linalg.norm(X[:, None] - centroides, axis=2)
 
 def mostrar_grafica_pca(X, asignaciones, centroides, titulo):
     if X.shape[1] < 2:
-        st.warning("PCA requiere al menos dos columnas numéricas para la visualización.")
+        st.warning("PCA requiere al menos dos columnas numéricas para visualizar.")
         return
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(X)
@@ -45,20 +42,20 @@ def mostrar_grafica_pca(X, asignaciones, centroides, titulo):
     plt.close()
 
 def procesar_k_means():
-    st.title("📊 K-means clustering con visualización paso a paso")
+    st.title("📊 K-means clustering paso a paso")
 
-    uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
+    uploaded_file = st.file_uploader("Sube archivo CSV o Excel", type=["csv", "xlsx"])
     if uploaded_file is None:
-        st.info("Por favor, sube un archivo para continuar.")
+        st.info("Sube un archivo para continuar.")
         return
 
     try:
         if uploaded_file.name.endswith(".csv"):
-            df = pd.read_csv(uploaded_file)
+            df = pd.read_csv(uploaded_file, na_values=["?"])
         else:
-            df = pd.read_excel(uploaded_file)
+            df = pd.read_excel(uploaded_file, na_values=["?"])
     except Exception as e:
-        st.error(f"Error cargando archivo: {e}")
+        st.error(f"Error al cargar archivo: {e}")
         return
 
     st.subheader("Vista previa del dataset")
@@ -70,10 +67,9 @@ def procesar_k_means():
         st.error("No se encontraron columnas numéricas para clustering.")
         return
 
-    # CAMBIO: mínimo 1 columna numérica para que funcione con tu dataset
     x_cols = st.multiselect("Selecciona columnas numéricas para clustering", num_cols, default=num_cols)
     if len(x_cols) < 1:
-        st.warning("Selecciona al menos una columna numérica para realizar clustering.")
+        st.warning("Selecciona al menos una columna numérica para clustering.")
         return
 
     cat_cols = [col for col in columnas if pd.api.types.is_object_dtype(df[col]) or pd.api.types.is_categorical_dtype(df[col])]
@@ -86,66 +82,65 @@ def procesar_k_means():
     else:
         st.info("No se encontró columna categórica, se usará k=2 por defecto.")
 
-    X_raw = df[x_cols]
-    mask_nan = X_raw.isnull().any(axis=1)
-    X = X_raw.fillna(X_raw.mean()).to_numpy()
-
-    st.markdown(f"### Número de clusters (k): {k}")
-    st.markdown(f"### Columnas usadas para clustering: {x_cols}")
+    df = imputar_valores(df, x_cols)
+    X = df[x_cols].values
 
     if not st.button("Ejecutar K-means paso a paso"):
         return
 
-    max_iter = 20
-    centroides = inicializar_centroides(X, k)
-    asignaciones_previas = None
+    if cat_col:
+        centroides, clases = inicializar_centroides_por_clase(df, x_cols, cat_col)
+    else:
+        indices = np.random.choice(len(X), k, replace=False)
+        centroides = X[indices]
+        clases = np.arange(k)
+
+    asign_prev = None
     convergencia = False
+    max_iter = 20
 
     for i in range(1, max_iter + 1):
-        distancias = np.array([euclidean_distance(X, c) for c in centroides]).T
-        nuevas_asignaciones = np.argmin(distancias, axis=1)
+        distancias = calcular_distancias(X, centroides)
+        asign_idx = np.argmin(distancias, axis=1)
+        asignaciones = clases[asign_idx]
+
+        tabla = pd.DataFrame(X, columns=x_cols)
+        for idx, c in enumerate(clases):
+            tabla[f"Distancia Cluster {c}"] = distancias[:, idx].round(2)
+        tabla['Cluster Más Cercano'] = asignaciones
 
         st.markdown(f"## Iteración {i}")
+        st.dataframe(tabla)
+
         st.markdown("### Centroides")
-        st.dataframe(pd.DataFrame(centroides, columns=x_cols))
+        centroides_df = pd.DataFrame(centroides, columns=x_cols)
+        centroides_df['Cluster'] = clases
+        st.dataframe(centroides_df)
 
-        st.markdown("### Distancias (primeras 10 filas)")
-        st.dataframe(pd.DataFrame(distancias, columns=[f"Cluster {j}" for j in range(k)]).head(10))
-
-        st.markdown("### Asignaciones")
-        st.dataframe(pd.DataFrame({"Índice": df.index, "Asignación cluster": nuevas_asignaciones}).head(10))
-
-        # Mostrar gráfica solo si hay al menos 2 columnas numéricas
-        if len(x_cols) >= 2:
-            mostrar_grafica_pca(X, nuevas_asignaciones, centroides, f"Clusters iteración {i}")
-        else:
-            st.info("Se requiere al menos dos columnas numéricas para visualizar PCA.")
-
-        if asignaciones_previas is not None and np.array_equal(nuevas_asignaciones, asignaciones_previas):
+        if asign_prev is not None and np.array_equal(asign_idx, asign_prev):
             st.success(f"Convergencia alcanzada en iteración {i}")
             convergencia = True
             break
 
-        asignaciones_previas = nuevas_asignaciones.copy()
-        for cluster_idx in range(k):
-            puntos_cluster = X[nuevas_asignaciones == cluster_idx]
-            if len(puntos_cluster) > 0:
-                centroides[cluster_idx] = puntos_cluster.mean(axis=0)
+        asign_prev = asign_idx.copy()
+
+        nuevos_centroides = []
+        for idx, c in enumerate(clases):
+            puntos = X[asign_idx == idx]
+            if len(puntos) > 0:
+                nuevos_centroides.append(puntos.mean(axis=0))
+            else:
+                nuevos_centroides.append(centroides[idx])
+        centroides = np.array(nuevos_centroides)
+
+        if len(x_cols) >= 2:
+            mostrar_grafica_pca(X, asign_idx, centroides, f"Clusters iteración {i}")
 
     if not convergencia:
         st.warning(f"No se alcanzó convergencia en {max_iter} iteraciones.")
 
-    if mask_nan.any():
-        st.markdown("### Asignación de datos con valores faltantes (imputados durante cálculo)")
-        X_nan = X_raw[mask_nan].fillna(X_raw.mean()).to_numpy()
-        dist_nan = np.array([euclidean_distance(X_nan, c) for c in centroides]).T
-        asign_nan = np.argmin(dist_nan, axis=1)
-        df.loc[mask_nan, 'Cluster asignado'] = asign_nan
-        st.dataframe(df.loc[mask_nan, ['Cluster asignado'] + x_cols])
-    else:
-        df['Cluster asignado'] = nuevas_asignaciones
-
-    st.markdown("### Resultado final: asignación de clusters para todo el dataset")
+    df['Cluster asignado'] = asignaciones
+    st.markdown("### Resultado final")
     st.dataframe(df[[*x_cols, 'Cluster asignado']])
 
 def run():
