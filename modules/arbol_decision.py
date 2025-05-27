@@ -9,9 +9,17 @@ def normalizar_texto(texto):
     texto = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
     return texto
 
+def corregir_errores_ortograficos(valor):
+    correcciones = {
+        'ingnieria': 'ingenieria',
+        # Añade aquí más correcciones si las detectas
+    }
+    return correcciones.get(valor, valor)
+
 def limpiar_y_normalizar_df(df, columnas):
     for col in columnas:
         df[col] = df[col].astype(str).apply(lambda x: normalizar_texto(x))
+        df[col] = df[col].apply(corregir_errores_ortograficos)
     return df
 
 def calcular_entropia(etiquetas):
