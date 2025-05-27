@@ -12,7 +12,8 @@ explicacion_seleccionada = st.sidebar.radio(
         "Ninguna",
         "Árbol de Decisión",
         "Regresión Lineal",
-        "K-means"
+        "K-means",
+        "Regresión Múltiple"   # Agregado
     )
 )
 
@@ -29,7 +30,6 @@ algoritmo_seleccionado = st.sidebar.selectbox(
     )
 )
 
-# Mostrar la explicación seleccionada, si no es "Ninguna"
 if explicacion_seleccionada != "Ninguna":
     if explicacion_seleccionada == "Árbol de Decisión":
         explicaciones.mostrar_explicacion_id3()
@@ -37,8 +37,9 @@ if explicacion_seleccionada != "Ninguna":
         explicaciones.mostrar_explicacion_regresion_lineal()
     elif explicacion_seleccionada == "K-means":
         explicaciones.mostrar_explicacion_k_means()
+    elif explicacion_seleccionada == "Regresión Múltiple":
+        explicaciones.mostrar_explicacion_regresion_multiple()  # Nuevo método
 else:
-    # Si no se muestra explicación, ejecutar el algoritmo seleccionado
     if algoritmo_seleccionado == "Árbol de Decisión":
         arbol_decision.run()
     elif algoritmo_seleccionado == "Regresión Lineal":

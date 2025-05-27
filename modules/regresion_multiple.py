@@ -1,53 +1,101 @@
 import streamlit as st
 import pandas as pd
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
-import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.linear_model import LinearRegression
 
 def procesar_regresion_multiple():
-    st.title("🏠 Regresión Lineal Múltiple")
+    st.title("📊 Regresión Lineal Múltiple - Cálculo paso a paso")
 
-    st.write("Carga un archivo CSV con varias variables independientes y una dependiente para generar el modelo.")
+    uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
+    if uploaded_file is None:
+        st.info("Por favor, sube un archivo para continuar.")
+        return
 
-    uploaded_file = st.file_uploader("Sube tu archivo CSV", type=["csv"])
+    # Cargar DataFrame
+    try:
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file)
+        st.session_state['df'] = df
+    except Exception as e:
+        st.error(f"Error cargando archivo: {e}")
+        return
 
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        st.subheader("Vista previa del archivo")
-        st.dataframe(df)
+    st.subheader("Vista previa del dataset")
+    st.dataframe(df)
 
-        columnas = df.columns.tolist()
+    columnas = df.columns.tolist()
+    y_col = st.selectbox("Selecciona la variable dependiente (Y)", columnas, key="y_col_multiple")
+    x_cols = st.multiselect("Selecciona las variables independientes (X)", [col for col in columnas if col != y_col], key="x_cols_multiple")
 
-        y_col = st.selectbox("Selecciona la variable dependiente (Y)", columnas)
-        x_cols = st.multiselect("Selecciona las variables independientes (X)", [col for col in columnas if col != y_col])
+    if not x_cols:
+        st.warning("Selecciona al menos una variable independiente.")
+        return
 
-        if len(x_cols) > 0 and st.button("Entrenar modelo"):
-            try:
-                X = df[x_cols].values
-                y = df[y_col].values
+    calcular = st.button("Calcular regresión múltiple paso a paso")
 
-                modelo = LinearRegression()
-                modelo.fit(X, y)
-                y_pred = modelo.predict(X)
+    if calcular:
+        try:
+            X = df[x_cols].values
+            Y = df[y_col].values.reshape(-1, 1)
+            n, k = X.shape
 
-                st.success("Modelo entrenado exitosamente.")
+            # Agregar columna de unos para intercepto
+            X_b = np.hstack([np.ones((n, 1)), X])
 
-                ecuacion = " + ".join([f"{coef:.4f} * {var}" for coef, var in zip(modelo.coef_, x_cols)])
-                st.markdown(f"**Ecuación del modelo:**  \n`Y = {ecuacion} + {modelo.intercept_:.4f}`")
-                st.markdown(f"**MSE:** {mean_squared_error(y, y_pred):.4f}")
-                st.markdown(f"**R² (coeficiente de determinación):** {r2_score(y, y_pred):.4f}")
+            # Calcular coeficientes β usando ecuación normal
+            beta = np.linalg.inv(X_b.T @ X_b) @ X_b.T @ Y
+            beta = beta.flatten()
 
-                # Predicción interactiva
-                st.subheader("Haz una predicción")
-                valores = []
-                for col in x_cols:
-                    valor = st.number_input(f"Ingrese un valor para {col}:", value=0.0)
-                    valores.append(valor)
+            # Guardar en session_state para persistencia
+            st.session_state['beta'] = beta
+            st.session_state['x_cols'] = x_cols
+            st.session_state['y_col'] = y_col
+            st.session_state['X_b'] = X_b
+            st.session_state['Y'] = Y
+            st.session_state['calculo_realizado'] = True
 
-                if st.button("Predecir"):
-                    prediccion = modelo.predict([valores])[0]
-                    st.success(f"Predicción para los valores ingresados ➤ {y_col} = {prediccion:.2f}")
+        except np.linalg.LinAlgError:
+            st.error("Error: La matriz X^T * X no es invertible. Puede haber multicolinealidad entre variables independientes.")
+        except Exception as e:
+            st.error(f"Error en el cálculo: {str(e)}")
 
-            except Exception as e:
-                st.error(f"Error en el modelo: {str(e)}")
+    # Mostrar resultados calculados
+    if st.session_state.get('calculo_realizado', False):
+        st.markdown("### Matriz de diseño X (con columna de unos para intercepto)")
+        st.dataframe(pd.DataFrame(st.session_state['X_b'], columns=["Intercepto"] + st.session_state['x_cols']))
+
+        st.markdown("### Vector de variable dependiente Y")
+        st.dataframe(pd.DataFrame(st.session_state['Y'], columns=[st.session_state['y_col']]))
+
+        st.markdown("### Coeficientes calculados (β)")
+        coef_df = pd.DataFrame({
+            "Variable": ["Intercepto"] + st.session_state['x_cols'],
+            "Coeficiente (β)": st.session_state['beta']
+        })
+        st.dataframe(coef_df)
+
+        # Mostrar ecuación final
+        ecuacion = f"{st.session_state['y_col']} = {st.session_state['beta'][0]:.4f}"
+        for i, col in enumerate(st.session_state['x_cols'], start=1):
+            coef = st.session_state['beta'][i]
+            signo = "+" if coef >= 0 else "-"
+            ecuacion += f" {signo} {abs(coef):.4f} * {col}"
+        st.markdown(f"### Ecuación de regresión final:\n\n{ecuacion}")
+
+        # Formulario para predicción
+        with st.form(key='form_prediccion_multiple'):
+            st.markdown("### Realiza una predicción")
+            valores = {}
+            for col in st.session_state['x_cols']:
+                valores[col] = st.number_input(f"Ingrese valor para {col}", value=0.0)
+            submit_button = st.form_submit_button(label='Calcular predicción')
+
+        if submit_button:
+            x_input = np.array([1] + [valores[col] for col in st.session_state['x_cols']])
+            prediccion = x_input @ st.session_state['beta']
+            st.success(f"Predicción para {st.session_state['y_col']}: {prediccion:.4f}")
+
+def run():
+    procesar_regresion_multiple()
