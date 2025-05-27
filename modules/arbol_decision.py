@@ -142,3 +142,6 @@ def procesar_arbol_decision():
         st.subheader("🌳 Diagrama del Árbol ")
         dot = dibujar_arbol(arbol)
         st.graphviz_chart(dot)
+
+def run():
+    procesar_arbol_decision()

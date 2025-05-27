@@ -1,33 +1,36 @@
 import streamlit as st
 from modules import explicaciones
+from modules import arbol_decision, regresion_lineal, k_means, regresion_multiple
 
-st.sidebar.title("Menú de algoritmos")
-opcion = st.sidebar.selectbox(
-    "Selecciona el algoritmo que deseas ejecutar:",
-    ["Árbol de Decisión", "K-means", "Regresión Lineal", "Regresión Múltiple"]
-)
+st.title("App de Algoritmos")
 
-mostrar_explicacion = st.sidebar.button("Mostrar explicación")
+# Menú lateral para seleccionar el algoritmo a ejecutar
+opcion = st.sidebar.selectbox("Selecciona el algoritmo:", 
+                              ["Árbol de Decisión", "Regresión Lineal", "K-means", "Regresión Múltiple"])
 
-if mostrar_explicacion:
-    if opcion == "Árbol de Decisión":
+# En la parte principal, mostramos botones independientes para explicaciones
+st.markdown("## Explicaciones")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    if st.button("Explicación Árbol de Decisión"):
         explicaciones.mostrar_explicacion_id3()
-    elif opcion == "Regresión Lineal":
+
+with col2:
+    if st.button("Explicación Regresión Lineal"):
         explicaciones.mostrar_explicacion_regresion_lineal()
-    elif opcion == "K-means":
+
+with col3:
+    if st.button("Explicación K-means"):
         explicaciones.mostrar_explicacion_k_means()
-    else:
-        st.warning("Explicación no disponible para esta opción.")
-else:
-    if opcion == "Árbol de Decisión":
-        from modules import arbol_decision
-        arbol_decision.run()
-    elif opcion == "Regresión Lineal":
-        from modules import regresion_lineal
-        regresion_lineal.run()
-    elif opcion == "K-means":
-        from modules import k_means
-        k_means.run()
-    elif opcion == "Regresión Múltiple":
-        from modules import regresion_multiple
-        regresion_multiple.run()
+
+# Ejecución del módulo seleccionado
+st.markdown("---")
+if opcion == "Árbol de Decisión":
+    arbol_decision.run()
+elif opcion == "Regresión Lineal":
+    regresion_lineal.run()
+elif opcion == "K-means":
+    k_means.run()
+elif opcion == "Regresión Múltiple":
+    regresion_multiple.run()
