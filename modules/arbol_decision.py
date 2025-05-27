@@ -9,6 +9,11 @@ def normalizar_texto(texto):
     texto = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
     return texto
 
+def limpiar_y_normalizar_df(df, columnas):
+    for col in columnas:
+        df[col] = df[col].astype(str).apply(lambda x: normalizar_texto(x))
+    return df
+
 def calcular_entropia(etiquetas):
     valores, conteos = np.unique(etiquetas, return_counts=True)
     probabilidades = conteos / conteos.sum()
@@ -140,6 +145,10 @@ def procesar_arbol_decision():
             df = pd.read_csv(uploaded_file)
         else:
             df = pd.read_excel(uploaded_file)
+
+        columnas = df.columns.tolist()
+        df = limpiar_y_normalizar_df(df, columnas)
+
         st.session_state['df'] = df
 
     if 'df' not in st.session_state:
@@ -183,13 +192,7 @@ def procesar_arbol_decision():
             ejemplo = {}
             for idx, col in enumerate(input_cols):
                 raw_opciones = list(st.session_state['df_model'][col].unique())
-                seen = set()
-                opciones_limpias = []
-                for val in raw_opciones:
-                    val_norm = normalizar_texto(val)
-                    if val_norm not in seen:
-                        seen.add(val_norm)
-                        opciones_limpias.append(str(val).strip())
+                opciones_limpias = sorted(set(raw_opciones))
 
                 if '?' not in opciones_limpias:
                     opciones_limpias.append('?')
