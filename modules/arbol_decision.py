@@ -2,6 +2,12 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 from graphviz import Digraph
+import unicodedata
+
+def normalizar_texto(texto):
+    texto = str(texto).strip().lower()
+    texto = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
+    return texto
 
 def calcular_entropia(etiquetas):
     valores, conteos = np.unique(etiquetas, return_counts=True)
@@ -177,13 +183,12 @@ def procesar_arbol_decision():
             ejemplo = {}
             for idx, col in enumerate(input_cols):
                 raw_opciones = list(st.session_state['df_model'][col].unique())
-                # Limpiar duplicados ignorando mayúsculas/minúsculas y espacios
                 seen = set()
                 opciones_limpias = []
                 for val in raw_opciones:
-                    val_str = str(val).strip().lower()
-                    if val_str not in seen:
-                        seen.add(val_str)
+                    val_norm = normalizar_texto(val)
+                    if val_norm not in seen:
+                        seen.add(val_norm)
                         opciones_limpias.append(str(val).strip())
 
                 if '?' not in opciones_limpias:
