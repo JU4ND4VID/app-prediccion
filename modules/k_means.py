@@ -26,6 +26,11 @@ def k_means_iterativo(X, k, max_iter=100):
     return centroides, asignaciones, iter_num
 
 def mostrar_grafica_pca(X, asignaciones, centroides, titulo):
+    # Validar dimensiones para PCA
+    if min(X.shape) < 2:
+        st.warning("No es posible realizar PCA con menos de 2 muestras o 2 características.")
+        return
+    
     pca = PCA(n_components=2)
     X_pca = pca.fit_transform(X)
     centroides_pca = pca.transform(centroides)
@@ -70,6 +75,10 @@ def procesar_k_means():
         st.error("No se encontraron columnas numéricas para clustering.")
         return
     x_cols = st.multiselect("Selecciona columnas numéricas para clustering", num_cols, default=num_cols)
+
+    if len(x_cols) < 2:
+        st.warning("Selecciona al menos dos columnas numéricas para realizar PCA y mostrar gráfica.")
+        return
 
     # Selección columna categórica para detectar k (opcional)
     cat_cols = [col for col in columnas if pd.api.types.is_object_dtype(df[col]) or pd.api.types.is_categorical_dtype(df[col])]
