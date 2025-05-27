@@ -6,7 +6,7 @@ from graphviz import Digraph
 def calcular_entropia(etiquetas):
     valores, conteos = np.unique(etiquetas, return_counts=True)
     probabilidades = conteos / conteos.sum()
-    entropia = -np.sum(probabilidades * np.log2(probabilidades + 1e-9))  # Evitar log(0)
+    entropia = -np.sum(probabilidades * np.log2(probabilidades + 1e-9))
     return entropia
 
 def ganancia_informacion(data, atributo, target):
@@ -37,8 +37,6 @@ class NodoDecision:
 
 def construir_arbol_interactivo(data, atributos, target, nivel=0):
     indent = "    " * nivel
-
-    # Excluir filas con '?' en la columna target
     data = data[data[target] != '?']
 
     if len(data) == 0:
@@ -59,7 +57,6 @@ def construir_arbol_interactivo(data, atributos, target, nivel=0):
 
     ganancias = {}
     for atributo in atributos:
-        # Excluir filas con '?' en el atributo para cálculo
         data_filtrada = data[data[atributo] != '?']
         if len(data_filtrada) == 0:
             ganancias[atributo] = 0
@@ -121,7 +118,6 @@ def predecir(nodo, ejemplo):
         return nodo.clase
     valor = ejemplo.get(nodo.atributo, None)
     if valor == '?' or valor not in nodo.hijos:
-        # Elegir la rama con más hijos (heurística simple)
         if nodo.hijos:
             valor = max(nodo.hijos.keys(), key=lambda v: len(nodo.hijos[v].hijos) if not nodo.hijos[v].es_hoja else 0)
         else:
@@ -132,21 +128,33 @@ def procesar_arbol_decision():
     st.title("🌳 Árbol de Decisión ID3 con explicación paso a paso")
 
     uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
-    if uploaded_file is None:
+
+    if uploaded_file is not None:
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file)
+        st.session_state['df'] = df  # Guardar dataset en sesión para persistencia
+
+    if 'df' not in st.session_state:
         st.info("Por favor, sube un archivo para continuar.")
         return
 
-    if uploaded_file.name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_excel(uploaded_file)
-
+    df = st.session_state['df']
     st.subheader("Vista previa de datos")
     st.dataframe(df)
 
     columnas = df.columns.tolist()
-    target_col = st.selectbox("Selecciona la variable a predecir (target)", columnas)
-    input_cols = st.multiselect("Selecciona las variables de entrada (features)", [col for col in columnas if col != target_col])
+    if 'target_col' not in st.session_state:
+        st.session_state['target_col'] = None
+    if 'input_cols' not in st.session_state:
+        st.session_state['input_cols'] = []
+
+    target_col = st.selectbox("Selecciona la variable a predecir (target)", columnas, index=0, key='target_col_select')
+    input_cols = st.multiselect("Selecciona las variables de entrada (features)", [col for col in columnas if col != target_col], key='input_cols_select')
+
+    st.session_state['target_col'] = target_col
+    st.session_state['input_cols'] = input_cols
 
     if st.button("Generar árbol ID3 con explicación"):
         if not input_cols:
@@ -154,34 +162,35 @@ def procesar_arbol_decision():
             return
 
         df_model = df[input_cols + [target_col]].astype(str)
+        st.session_state['df_model'] = df_model
+        st.session_state['arbol'] = construir_arbol_interactivo(df_model, input_cols, target_col)
+        st.session_state['reglas'] = extraer_reglas(st.session_state['arbol'])
+        st.session_state['arbol_creado'] = True
 
-        st.markdown("## Construcción recursiva del árbol")
-        arbol = construir_arbol_interactivo(df_model, input_cols, target_col)
-
+    if st.session_state.get('arbol_creado', False):
         st.success("Árbol construido correctamente.")
 
-        reglas = extraer_reglas(arbol)
         st.subheader("📋 Reglas de Clasificación Generadas")
-        for i, regla in enumerate(reglas, 1):
+        for i, regla in enumerate(st.session_state['reglas'], 1):
             st.markdown(f"**Regla {i}:** {regla}")
 
         st.subheader("🌳 Diagrama del Árbol ")
-        dot = dibujar_arbol(arbol)
+        dot = dibujar_arbol(st.session_state['arbol'])
         st.graphviz_chart(dot)
 
-        # Prueba de predicción con formulario para evitar recarga
         st.subheader("🧪 Prueba de predicción con valores con '?'")
+
         with st.form(key='form_prediccion'):
             ejemplo = {}
-            for col in input_cols:
-                opciones = list(df_model[col].unique())
+            for idx, col in enumerate(st.session_state['input_cols']):
+                opciones = list(st.session_state['df_model'][col].unique())
                 if '?' not in opciones:
                     opciones.append('?')
-                ejemplo[col] = st.selectbox(f"Selecciona valor para {col} (o '?' para desconocido)", opciones, index=opciones.index('?'))
+                ejemplo[col] = st.selectbox(f"Selecciona valor para {col} (o '?' para desconocido)", opciones, index=opciones.index('?'), key=f'select_{col}_{idx}')
             submit_button = st.form_submit_button(label="Predecir categoría para el ejemplo ingresado")
 
         if submit_button:
-            prediccion = predecir(arbol, ejemplo)
+            prediccion = predecir(st.session_state['arbol'], ejemplo)
             if prediccion is None:
                 st.error("No se pudo predecir para el ejemplo dado.")
             else:
