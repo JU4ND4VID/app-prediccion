@@ -15,7 +15,7 @@ def contar_modas_por_cluster(df_known, cat_col, clase_col):
 
     conteo = conteo.fillna(0).astype(int)
     modas = {c: conteo[c].idxmax() for c in clases}
-    return modas, conteo
+    return conteo, modas
 
 def diferencia_binaria(a, b):
     return 0 if a == b else 1
@@ -58,9 +58,9 @@ def procesar_k_modas():
     df_known = df.loc[mask_known].copy()
     df_missing = df.loc[~mask_known].copy()
 
-    modas, conteo = contar_modas_por_cluster(df_known, cat_col, clase_col)
+    conteo, modas = contar_modas_por_cluster(df_known, cat_col, clase_col)
 
-    st.markdown("### Conteo de valores por cluster")
+    st.markdown("### Conteo de valores por cluster (Inicial)")
     st.dataframe(conteo)
 
     st.markdown("### Modas iniciales por cluster")
@@ -107,16 +107,13 @@ def procesar_k_modas():
         asign_prev = asign.copy()
 
         df_known["Cluster Temporal"] = asign
-        nuevas_modas = {}
-        for c in clases:
-            vals = df_known.loc[df_known["Cluster Temporal"] == c, cat_col]
-            if len(vals) > 0:
-                nuevas_modas[c] = vals.mode().iloc[0]
-            else:
-                nuevas_modas[c] = modas[c]
-
+        conteo, nuevas_modas = contar_modas_por_cluster(df_known, cat_col, clase_col)
         modas = nuevas_modas
         df_known.drop(columns=["Cluster Temporal"], inplace=True)
+
+        if it == 2:
+            st.markdown("### Conteo de valores por cluster (Iteración 2)")
+            st.dataframe(conteo)
 
     if not convergencia:
         st.warning(f"No se alcanzó convergencia en {max_iter} iteraciones.")
