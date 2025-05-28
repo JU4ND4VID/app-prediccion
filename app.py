@@ -41,7 +41,6 @@ if explicacion_seleccionada != "Ninguna":
         explicaciones.mostrar_explicacion_k_means()
     elif explicacion_seleccionada == "K-modas":
         explicaciones.mostrar_explicacion_k_modas()
-        st.info("Explicación para K-modas próximamente.")
     elif explicacion_seleccionada == "Regresión Múltiple":
         explicaciones.mostrar_explicacion_regresion_multiple()
 else:
