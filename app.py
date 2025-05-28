@@ -1,6 +1,6 @@
 import streamlit as st
 from modules import explicaciones
-from modules import arbol_decision, regresion_lineal, k_means, regresion_multiple
+from modules import arbol_decision, regresion_lineal, k_means, regresion_multiple, k_modas  # Importa k_modas
 
 st.set_page_config(page_title="App de Algoritmos", layout="wide")
 
@@ -13,6 +13,7 @@ explicacion_seleccionada = st.sidebar.radio(
         "Árbol de Decisión",
         "Regresión Lineal",
         "K-means",
+        "K-modas",          # Nueva opción para K-modas
         "Regresión Múltiple"
     )
 )
@@ -26,6 +27,7 @@ algoritmo_seleccionado = st.sidebar.selectbox(
         "Árbol de Decisión",
         "Regresión Lineal",
         "K-means",
+        "K-modas",          # Nueva opción para ejecutar K-modas
         "Regresión Múltiple"
     )
 )
@@ -37,6 +39,9 @@ if explicacion_seleccionada != "Ninguna":
         explicaciones.mostrar_explicacion_regresion_lineal()
     elif explicacion_seleccionada == "K-means":
         explicaciones.mostrar_explicacion_k_means()
+    elif explicacion_seleccionada == "K-modas":
+        explicaciones.mostrar_explicacion_k_modas()
+        st.info("Explicación para K-modas próximamente.")
     elif explicacion_seleccionada == "Regresión Múltiple":
         explicaciones.mostrar_explicacion_regresion_multiple()
 else:
@@ -46,5 +51,7 @@ else:
         regresion_lineal.run()
     elif algoritmo_seleccionado == "K-means":
         k_means.run()
+    elif algoritmo_seleccionado == "K-modas":
+        k_modas.run()
     elif algoritmo_seleccionado == "Regresión Múltiple":
         regresion_multiple.run()

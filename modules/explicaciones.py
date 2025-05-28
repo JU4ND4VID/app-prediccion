@@ -280,5 +280,28 @@ def mostrar_explicacion_k_means():
     - Agrupamiento de documentos.
     - Detección de patrones en datos.
     """)
+def mostrar_explicacion_k_modas():
+    st.title("Explicación de K-modas")
+    st.markdown("""
+    ## ¿Qué es K-modas?
 
+    K-modas es una técnica de clustering para datos categóricos. Similar a K-means, pero en lugar de usar medias y distancia euclidiana, usa modas (valores más frecuentes) y una medida de disimilitud basada en conteo de diferencias.
+
+    ### Proceso básico:
+    1. Se asignan los modos iniciales por cluster según la moda en los datos conocidos.
+    2. Cada punto se asigna al cluster cuyo modo tiene menor número de diferencias con el dato.
+    3. Se recalculan los modos con las asignaciones actuales.
+    4. Se repite hasta convergencia.
+    5. Se imputan los valores faltantes usando el modo del cluster asignado.
+
+    ### Aplicaciones comunes:
+    - Datos categóricos puros.
+    - Segmentación de clientes por atributos categóricos.
+    - Análisis de comportamiento con variables no numéricas.
+
+    ### Diferencias con K-means:
+    - K-means usa medias y distancia euclidiana (numérico).
+    - K-modas usa modas y distancia por conteo de diferencias (categórico).
+
+    """)
 
