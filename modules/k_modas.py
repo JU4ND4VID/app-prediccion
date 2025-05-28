@@ -17,10 +17,8 @@ def contar_modas_por_cluster(df_known, cat_col, clase_col):
     modas = {c: conteo[c].idxmax() for c in clases}
     return modas, conteo
 
-def distancia_conteo(valor, cluster_vals):
-    total = len(cluster_vals)
-    conteo_igual = sum(cluster_vals == valor)
-    return total - conteo_igual
+def diferencia_binaria(a, b):
+    return 0 if a == b else 1
 
 def procesar_k_modas():
     st.title("📊 K-modes clustering paso a paso")
@@ -78,15 +76,17 @@ def procesar_k_modas():
     for it in range(1, max_iter+1):
         distancias = []
         for c in clases:
-            cluster_vals = df_known.loc[df_known[clase_col] == c, cat_col].values
-            dist_c = df_known[cat_col].apply(lambda x: distancia_conteo(x, cluster_vals))
+            modo_c = modas[c]
+            dist_c = df_known.apply(lambda row:
+                diferencia_binaria(row[cat_col], modo_c) + diferencia_binaria(row[clase_col], c),
+                axis=1)
             distancias.append(dist_c.values)
         dist_arr = np.vstack(distancias).T
 
         asign_idx = np.argmin(dist_arr, axis=1)
         asign = [clases[i] for i in asign_idx]
 
-        tabla = pd.DataFrame({cat_col: df_known[cat_col]})
+        tabla = pd.DataFrame({cat_col: df_known[cat_col], clase_col: df_known[clase_col]})
         for j, c in enumerate(clases):
             tabla[f"Distancia Cluster {c}"] = dist_arr[:, j]
         tabla["Cluster Más Cercano"] = asign
