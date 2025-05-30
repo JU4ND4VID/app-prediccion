@@ -137,33 +137,51 @@ def predecir(nodo, ejemplo):
 # --- App Streamlit ---
 def procesar_arbol_decision():
     st.title("🌳 Árbol ID3 - Proceso Profesor")
-    uf = st.file_uploader("Sube CSV/XLSX", type=['csv','xlsx'])
-    if uf:
-        df = pd.read_csv(uf) if uf.name.endswith('csv') else pd.read_excel(uf)
-        df = limpiar_y_normalizar_df(df, df.columns.tolist())
-        st.session_state['df'] = df
-    if 'df' not in st.session_state:
-        st.info("Por favor, sube un archivo para continuar.")
+    # 1) Carga de datos ignorando valores con '?'
+    uploaded = st.file_uploader("Sube CSV o Excel", type=["csv","xlsx"])
+    if not uploaded:
+        st.info("Por favor sube un archivo para continuar.")
         return
-    df = st.session_state['df']
+    try:
+        if uploaded.name.endswith(".csv"):
+            df = pd.read_csv(uploaded, na_values=["?","? "], keep_default_na=False)
+        else:
+            df = pd.read_excel(uploaded, na_values=["?","? "], keep_default_na=False)
+    except Exception as e:
+        st.error(f"Error cargando el archivo: {e}")
+        return
+    # Eliminar filas con NaN (antes '?') en cualquier columna
+    df = df.dropna(how='any')
+    # Normalizar y guardar en sesión
+    df = limpiar_y_normalizar_df(df, df.columns.tolist())
+    st.session_state['df'] = df
+
+    # Vista previa de datos
     st.subheader("Datos cargados")
     st.dataframe(df)
+
+    # Selección de variables
     cols = df.columns.tolist()
-    target = st.selectbox("Selecciona target", cols, index=0)
-    features = st.multiselect("Selecciona features", [c for c in cols if c != target])
+    target = st.selectbox("Selecciona la variable a predecir", cols, index=0)
+    features = st.multiselect("Selecciona las variables de entrada", [c for c in cols if c != target])
+
+    # Generar árbol
     if st.button("Generar árbol ID3"):
         if not features:
-            st.error("Selecciona al menos una variable.")
+            st.error("Selecciona al menos una variable de entrada.")
             return
         df_model = df[features + [target]].astype(str)
         arbol = construir_arbol_interactivo(df_model, features, target)
         st.session_state['arbol'] = arbol
         st.session_state['reglas'] = extraer_reglas(arbol)
         st.session_state['ok'] = True
+
+    # Mostrar resultados
     if st.session_state.get('ok'):
         st.success("Árbol construido correctamente.")
         st.subheader("Reglas de Clasificación")
-        for i, r in enumerate(st.session_state['reglas'], 1): st.markdown(f"**Regla {i}:** {r}")
+        for i, regla in enumerate(st.session_state['reglas'], 1):
+            st.markdown(f"**Regla {i}:** {regla}")
         st.subheader("Diagrama del Árbol")
         st.graphviz_chart(dibujar_arbol(st.session_state['arbol']))
         st.subheader("Prueba de predicción")
@@ -174,10 +192,17 @@ def procesar_arbol_decision():
                 ejemplo[c] = st.selectbox(c, opts, index=opts.index('?'))
             if st.form_submit_button('Predecir'):
                 pr = predecir(st.session_state['arbol'], ejemplo)
-                if pr: st.success(f"Predicción: {pr}")
-                else: st.error("No se pudo predecir.")
+                if pr:
+                    st.success(f"Predicción: {pr}")
+                else:
+                    st.error("No se pudo predecir.")
 
 # Función run
+def run():
+    procesar_arbol_decision()
+
+if __name__ == '__main__':
+    run()
 def run(): procesar_arbol_decision()
 
 if __name__ == '__main__': run()

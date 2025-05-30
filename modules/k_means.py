@@ -1,208 +1,161 @@
+# modules/k_means.py
+
+import streamlit as st
 import pandas as pd
 import numpy as np
-import streamlit as st
-from graphviz import Digraph
-import unicodedata
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 
-# --- Normalización y limpieza ---
-def normalizar_texto(texto):
-    texto = str(texto).strip().lower()
-    texto = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
-    return texto
+def euclidean_distance(a, b):
+    return np.linalg.norm(a - b, axis=1)
 
-def corregir_errores_ortograficos(valor):
-    correcciones = {'ingnieria': 'ingenieria'}
-    return correcciones.get(valor, valor)
+def inicializar_centroides_por_clase(df_known, x_cols, cat_col):
+    clases = df_known[cat_col].unique()
+    centroides = []
+    for c in clases:
+        media = df_known.loc[df_known[cat_col] == c, x_cols].mean().values
+        centroides.append(media)
+    return np.vstack(centroides), np.array(clases)
 
-def limpiar_y_normalizar_df(df, columnas):
-    for col in columnas:
-        df[col] = df[col].astype(str).apply(normalizar_texto)
-        df[col] = df[col].apply(corregir_errores_ortograficos)
-    return df
+def inicializar_centroides_aleatorios(X_known, k):
+    idx = np.random.choice(len(X_known), k, replace=False)
+    return X_known[idx]
 
-# --- Cálculo de entropía ---
-def calcular_entropia(etiquetas, base=None):
-    valores, conteos = np.unique(etiquetas, return_counts=True)
-    probabilidades = conteos / conteos.sum()
-    k = base or len(valores)
-    ent = 0.0
-    for p in probabilidades:
-        if p > 0:
-            ent -= p * np.log(p) / np.log(k)
-    return ent
+def mostrar_grafica_pca(X, asign_idx, centroides, titulo):
+    if X.shape[1] < 2:
+        st.warning("PCA requiere al menos dos columnas numéricas para visualizar.")
+        return
+    pca = PCA(n_components=2)
+    X2 = pca.fit_transform(X)
+    C2 = pca.transform(centroides)
 
-# --- Entropía condicional estilo profesor ---
-def entropia_condicional(data, atributo, target, clases_global):
-    """
-    Muestra el cálculo de E(S|atributo) en un bloque expander con formato y código.
-    """
-    df = data[data[atributo] != '?']
-    valores, conteos = np.unique(df[atributo], return_counts=True)
-    n_total = conteos.sum()
-    k = len(clases_global)
+    plt.figure(figsize=(7,5))
+    scatter = plt.scatter(X2[:,0], X2[:,1], c=asign_idx, cmap='tab10', s=60, alpha=0.7)
+    plt.scatter(C2[:,0], C2[:,1], c='black', s=200, marker='X')
+    plt.title(titulo)
+    plt.xlabel('Componente Principal 1')
+    plt.ylabel('Componente Principal 2')
+    plt.legend(*scatter.legend_elements(), title="Clusters")
+    plt.grid(True)
+    st.pyplot(plt)
+    plt.close()
 
-    # Bloque expandible para claridad
-    with st.expander(f"🔍 Cálculo E(S|{atributo})", expanded=True):
-        st.markdown(f"### Para '{atributo}':")
-        E_cond = 0.0
-        for v, c in zip(valores, conteos):
-            subset = df[df[atributo] == v][target]
-            n_sub = len(subset)
-            # construir términos para cada clase global
-            terminos = []
-            for cls in clases_global:
-                cnt = np.sum(subset == cls)
-                terminos.append(f"{cnt}/{n_sub}*LOG({cnt}/{n_sub};{k})")
-            formula = ' + '.join(terminos)
-            contrib = (c / n_total) * calcular_entropia(subset, base=k)
-            E_cond += contrib
-            # mostrar cada paso en un bloque de código
-            st.code(f"= {c}/{n_total} * (-[{formula}]) = {contrib:.9f}", language='text')
-        # resultado final en negrita
-        st.markdown(f"**E(S|{atributo}) = {E_cond:.9f}**")
-    return E_cond
+def procesar_k_means():
+    st.title("📊 K-means clustering paso a paso")
 
-# --- Nodo de decisión ---
-class NodoDecision:
-    def __init__(self, atributo=None, hijos=None, es_hoja=False, clase=None):
-        self.atributo = atributo
-        self.hijos = hijos or {}
-        self.es_hoja = es_hoja
-        self.clase = clase
-
-# --- Construcción recursiva ---
-def construir_arbol_interactivo(data, atributos, target, clases_global=None):
-    # inicializar clases globales la primera vez
-    if clases_global is None:
-        clases_global = list(np.unique(data[target]))
-    df = data[data[target] != '?']
-    if df.empty:
-        st.write("⚠️ No hay datos, asigno clase 'Desconocido'")
-        return NodoDecision(es_hoja=True, clase='Desconocido')
-    # calcular E_cond para cada atributo
-    entropias = {}
-    for attr in atributos:
-        entropias[attr] = entropia_condicional(df, attr, target, clases_global)
-    # seleccionar el atributo con menor entropía condicional
-    mejor = min(entropias, key=entropias.get)
-    st.write(f"➡️ Mejor atributo = {mejor} (E(S|{mejor}) = {entropias[mejor]:.9f})\n")
-    nodo = NodoDecision(atributo=mejor)
-    # particionar
-    for val in np.unique(df[mejor]):
-        subset = df[df[mejor] == val]
-        if len(subset[target].unique()) == 1:
-            clase_leaf = subset[target].iloc[0]
-            st.write(f"▷ Particionando {mejor} = {val} → Nodo hoja con clase: {clase_leaf}\n")
-            nodo.hijos[val] = NodoDecision(es_hoja=True, clase=clase_leaf)
-        else:
-            resto = [a for a in atributos if a != mejor]
-            nodo.hijos[val] = construir_arbol_interactivo(subset, resto, target, clases_global)
-    return nodo
-
-# --- Extracción de reglas ---
-def extraer_reglas(nodo, camino=None):
-    camino = camino or []
-    if nodo.es_hoja:
-        cond = ' y '.join(camino) if camino else '(sin condición)'
-        return [f"Si {cond}, entonces Categoría = {nodo.clase}"]
-    reglas = []
-    for v, h in nodo.hijos.items():
-        reglas.extend(extraer_reglas(h, camino + [f"{nodo.atributo} = {v}"]))
-    return reglas
-
-# --- Dibujo del árbol ---
-def dibujar_arbol(nodo, dot=None, padre=None, etiqueta=None, contador=[0]):
-    if dot is None:
-        dot = Digraph(); dot.node('0','Inicio'); padre='0'; contador[0] = 1
-    nid = str(contador[0]); contador[0] += 1
-    if nodo.es_hoja:
-        dot.node(nid, f"Categoría: {nodo.clase}", shape='box', style='filled', color='lightgreen')
-    else:
-        dot.node(nid, nodo.atributo, shape='ellipse', style='filled', color='lightblue')
-    dot.edge(padre, nid, label=etiqueta or '')
-    if not nodo.es_hoja:
-        for v, h in nodo.hijos.items():
-            dibujar_arbol(h, dot, nid, str(v), contador)
-    return dot
-
-# --- Predicción ---
-def predecir(nodo, ejemplo):
-    if nodo.es_hoja:
-        return nodo.clase
-    val = ejemplo.get(nodo.atributo)
-    if val not in nodo.hijos:
-        val = next(iter(nodo.hijos))
-    return predecir(nodo.hijos[val], ejemplo)
-
-# --- App Streamlit ---
-def procesar_arbol_decision():
-    st.title("🌳 Árbol ID3 - Proceso Profesor")
-    # 1) Carga de datos ignorando valores con '?'
+    # 1) Carga de datos
     uploaded = st.file_uploader("Sube CSV o Excel", type=["csv","xlsx"])
     if not uploaded:
         st.info("Por favor sube un archivo para continuar.")
         return
+
     try:
         if uploaded.name.endswith(".csv"):
-            df = pd.read_csv(uploaded, na_values=["?","? "], keep_default_na=False)
+            df = pd.read_csv(uploaded, na_values=["?"])
         else:
-            df = pd.read_excel(uploaded, na_values=["?","? "], keep_default_na=False)
+            df = pd.read_excel(uploaded, na_values=["?"])
     except Exception as e:
         st.error(f"Error cargando el archivo: {e}")
         return
-    # Eliminar filas con NaN (antes '?') en cualquier columna
-    df = df.dropna(how='any')
-    # Normalizar y guardar en sesión
-    df = limpiar_y_normalizar_df(df, df.columns.tolist())
-    st.session_state['df'] = df
 
-    # Vista previa de datos
-    st.subheader("Datos cargados")
+    st.subheader("Vista previa del dataset")
     st.dataframe(df)
 
-    # Selección de variables
-    cols = df.columns.tolist()
-    target = st.selectbox("Selecciona la variable a predecir", cols, index=0)
-    features = st.multiselect("Selecciona las variables de entrada", [c for c in cols if c != target])
+    # 2) Selección de columnas numéricas
+    num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    if not num_cols:
+        st.error("No se encontraron columnas numéricas.")
+        return
 
-    # Generar árbol
-    if st.button("Generar árbol ID3"):
-        if not features:
-            st.error("Selecciona al menos una variable de entrada.")
-            return
-        df_model = df[features + [target]].astype(str)
-        arbol = construir_arbol_interactivo(df_model, features, target)
-        st.session_state['arbol'] = arbol
-        st.session_state['reglas'] = extraer_reglas(arbol)
-        st.session_state['ok'] = True
+    x_cols = st.multiselect("Selecciona columnas numéricas para clustering", num_cols, default=num_cols)
+    if len(x_cols) < 1:
+        st.warning("Selecciona al menos una columna numérica.")
+        return
 
-    # Mostrar resultados
-    if st.session_state.get('ok'):
-        st.success("Árbol construido correctamente.")
-        st.subheader("Reglas de Clasificación")
-        for i, regla in enumerate(st.session_state['reglas'], 1):
-            st.markdown(f"**Regla {i}:** {regla}")
-        st.subheader("Diagrama del Árbol")
-        st.graphviz_chart(dibujar_arbol(st.session_state['arbol']))
-        st.subheader("Prueba de predicción")
-        with st.form('form_pred'):
-            ejemplo = {}
-            for c in features:
-                opts = sorted(set(df_model[c].unique()) | {'?'})
-                ejemplo[c] = st.selectbox(c, opts, index=opts.index('?'))
-            if st.form_submit_button('Predecir'):
-                pr = predecir(st.session_state['arbol'], ejemplo)
-                if pr:
-                    st.success(f"Predicción: {pr}")
-                else:
-                    st.error("No se pudo predecir.")
+    # 3) Detección automática de columna de clase
+    cat_col = "Clase" if "Clase" in df.columns else None
+    if cat_col:
+        st.markdown(f"### Usando columna categórica para inicializar centroides: **{cat_col}**")
+        k = df[cat_col].nunique()
+    else:
+        st.info("No se encontró columna 'Clase', inicializando aleatoriamente k=2")
+        k = 2
 
-# Función run
+    # 4) Separar filas completas y faltantes
+    mask_known = df[x_cols].notna().all(axis=1)
+    df_known   = df.loc[mask_known].copy()
+    df_missing = df.loc[~mask_known].copy()
+
+    X_known = df_known[x_cols].to_numpy()
+
+    # 5) Inicializar centroides
+    if cat_col:
+        centroides, clases = inicializar_centroides_por_clase(df_known, x_cols, cat_col)
+    else:
+        centroides = inicializar_centroides_aleatorios(X_known, k)
+        clases = np.arange(k)
+
+    asign_prev = None
+    convergencia = False
+    max_iter = 20
+
+    # 6) Iteraciones de K-means
+    for it in range(1, max_iter+1):
+        dist = np.vstack([euclidean_distance(X_known, c) for c in centroides]).T  # n×k
+        asign_idx = np.argmin(dist, axis=1)
+        asign = clases[asign_idx]
+
+        # Tabla de distancias y asignaciones
+        tabla = df_known[x_cols].reset_index(drop=True)
+        for j,c in enumerate(clases):
+            tabla[f"Distancia Cluster {c}"] = dist[:,j].round(2)
+        tabla["Cluster Más Cercano"] = asign
+        st.markdown(f"## Iteración {it}")
+        st.dataframe(tabla)
+
+        # Tabla de centroides
+        cent_df = pd.DataFrame(centroides, columns=x_cols)
+        cent_df["Cluster"] = clases
+        st.markdown("### Centroides")
+        st.dataframe(cent_df.round(2))
+
+        # Gráfica PCA
+        if len(x_cols) >= 2:
+            mostrar_grafica_pca(X_known, asign_idx, centroides, f"Clusters iteración {it}")
+
+        # Verificar convergencia
+        if asign_prev is not None and np.array_equal(asign_idx, asign_prev):
+            st.success(f"Convergencia alcanzada en iteración {it}")
+            convergencia = True
+            break
+
+        asign_prev = asign_idx.copy()
+
+        # Recalcular centroides
+        nuevos = []
+        for j in range(len(centroides)):
+            pts = X_known[asign_idx == j]
+            nuevos.append(pts.mean(axis=0) if len(pts)>0 else centroides[j])
+        centroides = np.vstack(nuevos)
+
+    if not convergencia:
+        st.warning(f"No se alcanzó convergencia en {max_iter} iteraciones.")
+
+    # 7) Imputar valores faltantes (con sus clases)
+    if cat_col and not df_missing.empty:
+        mapa = {c: centroides[i] for i,c in enumerate(clases)}
+        df_missing = df_missing.copy()
+        df_missing["Cluster asignado"] = df_missing[cat_col]
+        for col in x_cols:
+            df_missing[col] = df_missing["Cluster asignado"].map(lambda cl: mapa[cl][x_cols.index(col)])
+        st.markdown("### Imputación de datos faltantes")
+        st.dataframe(df_missing[[*x_cols, cat_col, "Cluster asignado"]].round(2))
+
+    # 8) Resultado final
+    df_known["Cluster asignado"] = asign
+    resultado = pd.concat([df_known, df_missing], axis=0)
+    st.markdown("### Resultado final")
+    st.dataframe(resultado.reset_index(drop=True).round(2))
+
 def run():
-    procesar_arbol_decision()
-
-if __name__ == '__main__':
-    run()
-def run(): procesar_arbol_decision()
-
-if __name__ == '__main__': run()
+    procesar_k_means()
