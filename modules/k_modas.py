@@ -21,7 +21,7 @@ def diferencia_binaria(a, b):
     return 0 if a == b else 1
 
 def procesar_k_modas():
-    st.title("📊 K-modas ")
+    st.title("✨ K-modas ")
 
     uploaded = st.file_uploader("Sube CSV o Excel", type=["csv","xlsx"])
     if not uploaded:

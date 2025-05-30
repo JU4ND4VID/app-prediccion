@@ -39,7 +39,7 @@ def mostrar_grafica_pca(X, asign_idx, centroides, titulo):
     plt.close()
 
 def procesar_k_medias():
-    st.title("📊 K-medias")
+    st.title("🧠 K-medias")
 
     # 1) Carga de datos
     uploaded = st.file_uploader("Sube CSV o Excel", type=["csv","xlsx"])
