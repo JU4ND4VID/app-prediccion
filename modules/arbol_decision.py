@@ -11,11 +11,9 @@ def normalizar_texto(texto):
                     if unicodedata.category(c) != 'Mn')
     return texto
 
-
 def corregir_errores_ortograficos(valor):
     correcciones = {'ingnieria': 'ingenieria'}
     return correcciones.get(valor, valor)
-
 
 def limpiar_y_normalizar_df(df, columnas):
     for col in columnas:
@@ -23,56 +21,55 @@ def limpiar_y_normalizar_df(df, columnas):
         df[col] = df[col].apply(corregir_errores_ortograficos)
     return df
 
-# --- Cálculo de entropía y ganancia con detalles ---
+# --- Cálculo de entropía ---
 def calcular_entropia(etiquetas, base=None):
     valores, conteos = np.unique(etiquetas, return_counts=True)
     probabilidades = conteos / conteos.sum()
     k = base or len(valores)
-    # entropía base k
-    return -np.sum(probabilidades * np.log(probabilidades + 1e-9) / np.log(k))
+    # entropía S
+    ent = 0.0
+    for p in probabilidades:
+        if p > 0:
+            ent -= p * np.log(p + 1e-9) / np.log(k)
+    return ent
 
-
-def ganancia_informacion(data, atributo, target, indent=""):
+# --- Entropía condicional estilo profesor ---
+def entropia_condicional(data, atributo, target, indent=""):
     """
-    Calcula E(S), E(S|atributo) y G(S,atributo), construye una tabla con:
-    Valor, Cantidad, Peso, Entropía Subconjunto, Contribución y Distribución.
+    Muestra los cálculos como en el Excel del profesor:
+    =c/n * ( -sum_i ( cnt_i/n * LOG(cnt_i/n; k) ) )
+    y suma las contribuciones.
     """
-    # Entropía total
-    E_total = calcular_entropia(data[target], base=len(data[target].unique()))
-    st.write(f"{indent}🔸 Entropía total E(S) = {E_total:.4f}")
-
-    # Detalles por valor de atributo
-    filas = []
-    valores, conteos = np.unique(data[atributo], return_counts=True)
+    # filtrar faltantes
+    df = data[data[atributo] != '?']
+    valores, conteos = np.unique(df[atributo], return_counts=True)
     n_total = conteos.sum()
+    k = len(np.unique(df[target]))
+    # imprimir encabezado
+    st.write(f"{indent}Para '{atributo}':")
+
     E_cond = 0.0
+    # para cada valor de A
     for v, c in zip(valores, conteos):
-        peso = c / n_total
-        subset = data[data[atributo] == v][target]
-        E_sub = calcular_entropia(subset, base=len(data[target].unique()))
-        contrib = peso * E_sub
-        # distribución de clases dentro de S_v
+        subset = df[df[atributo] == v][target]
+        n_sub = len(subset)
+        # construir términos internos
         clases, cnts = np.unique(subset, return_counts=True)
-        dist = "; ".join([f"{clase}:{cnts[i]}/{len(subset)}" for i, clase in enumerate(clases)])
-        filas.append({
-            'Valor': v,
-            'Cantidad': int(c),
-            'Peso': round(peso, 3),
-            'Entropía Subconjunto': round(E_sub, 3),
-            'Contribución': round(contrib, 3),
-            'Distribución': dist
-        })
+        terminos = []
+        for cnt in cnts:
+            if cnt == 0:
+                terminos.append('0')
+            else:
+                terminos.append(f"{cnt}/{n_sub}*LOG({cnt}/{n_sub};{k})")
+        formula = '-'.join(terminos)
+        contrib = (c / n_total) * calcular_entropia(subset, base=k)
         E_cond += contrib
+        # mostrar línea de cálculo
+        st.write(f"{indent}= {c}/{n_total} * ( -{formula} ) = {contrib:.9f}")
 
-    df_detalles = pd.DataFrame(filas)
-    st.write(f"{indent}🔹 Detalles para atributo '{atributo}':")
-    st.dataframe(df_detalles)
-    st.write(f"{indent}🔹 E(S|{atributo}) = {E_cond:.4f}")
-
-    G = E_total - E_cond
-    st.write(f"{indent}➡️ Ganancia G(S,{atributo}) = {G:.4f}")
-    st.write(f"{indent}{'-'*30}")
-    return G
+    # suma final
+    st.write(f"{indent}E(S|{atributo}) = {E_cond:.9f}\n")
+    return E_cond
 
 # --- Nodo de decisión ---
 class NodoDecision:
@@ -82,61 +79,55 @@ class NodoDecision:
         self.es_hoja = es_hoja
         self.clase = clase
 
-# --- Construcción recursiva con explicación ---
+# --- Construcción recursiva ---
 def construir_arbol_interactivo(data, atributos, target, nivel=0):
     indent = '    ' * nivel
-    data = data[data[target] != '?']
+    df = data[data[target] != '?']
 
     # caso sin datos
-    if data.empty:
+    if df.empty:
         st.write(f"{indent}⚠️ No hay datos, asigno clase 'Desconocido'")
         return NodoDecision(es_hoja=True, clase='Desconocido')
-
     # caso puro
-    if len(data[target].unique()) == 1:
-        clase_unica = data[target].iloc[0]
-        st.write(f"{indent}📌 Nodo hoja con clase: {clase_unica}")
+    if len(df[target].unique()) == 1:
+        clase_unica = df[target].iloc[0]
+        st.write(f"{indent}▷ Particionando {data.columns[-1]} = {df.iloc[0, :-1].tolist()}? 📌 Nodo hoja con clase: {clase_unica}")
         return NodoDecision(es_hoja=True, clase=clase_unica)
-
-    # caso sin atributos
+    # caso sin atributos restantes
     if not atributos:
-        clase_mayoria = data[target].mode()[0]
-        st.write(f"{indent}⚠️ Sin atributos restantes, clase mayoritaria: {clase_mayoria}")
+        clase_mayoria = df[target].mode()[0]
+        st.write(f"{indent}⚠️ Sin atributos, nodo hoja clase mayoritaria: {clase_mayoria}")
         return NodoDecision(es_hoja=True, clase=clase_mayoria)
 
     # nivel actual
-    st.write(f"{indent}=== Nivel {nivel}: Dividiendo sobre {len(data)} instancias ===")
-    # calcular ganancias para cada atributo
-    ganancias = {}
+    st.write(f"{indent}=== Nivel {nivel}: Dividiendo sobre {len(df)} instancias ===")
+    # cálculos de entropía condicional para cada atributo
+    entropias = {}
     for attr in atributos:
-        st.write(f"{indent}--- Procesando atributo '{attr}' ---")
-        ganancias[attr] = ganancia_informacion(data, attr, target, indent + '    ')
-
-    # seleccionar mejor (máxima ganancia => mínima entropía condicional)
-    mejor = max(ganancias, key=ganancias.get)
-    st.write(f"{indent}➡️ **Mejor atributo**: {mejor} (G = {ganancias[mejor]:.4f})\n")
+        entropias[attr] = entropia_condicional(df, attr, target, indent + '    ')
+    # seleccionar atributo con menor E_cond
+    mejor = min(entropias, key=entropias.get)
+    st.write(f"{indent}➡️ Mejor atributo = {mejor} (E(S|{mejor}) = {entropias[mejor]:.9f})\n")
 
     nodo = NodoDecision(atributo=mejor)
-    # particionar
-    for val in np.unique(data[mejor]):
-        sub = data[data[mejor] == val]
-        # si es hoja
+    # particionar en hijos
+    for val in np.unique(df[mejor]):
+        st.write(f"{indent}▷ Particionando {mejor} = {val}")
+        sub = df[df[mejor] == val]
         if len(sub[target].unique()) == 1:
-            clase_sub = sub[target].iloc[0]
-            st.write(f"{indent}▷ Particionando {mejor} = {val} → Nodo hoja: {clase_sub}")
-            nodo.hijos[val] = NodoDecision(es_hoja=True, clase=clase_sub)
+            clase_leaf = sub[target].iloc[0]
+            st.write(f"{indent}📌 Nodo hoja con clase: {clase_leaf}\n")
+            nodo.hijos[val] = NodoDecision(es_hoja=True, clase=clase_leaf)
         else:
-            st.write(f"{indent}▷ Particionando {mejor} = {val}")
             resto = [a for a in atributos if a != mejor]
-            nodo.hijos[val] = construir_arbol_interactivo(sub, resto, target, nivel + 1)
-
+            nodo.hijos[val] = construir_arbol_interactivo(sub, resto, target, nivel+1)
     return nodo
 
-# --- Extracción de reglas, dibujo y predicción ---
+# --- Extracción de reglas y dibujo ---
 def extraer_reglas(nodo, camino=None):
     camino = camino or []
     if nodo.es_hoja:
-        cond = ' y '.join(camino) or '(sin condición)'
+        cond = ' y '.join(camino) if camino else '(sin condición)'
         return [f"Si {cond}, entonces Categoría = {nodo.clase}"]
     reglas = []
     for v, h in nodo.hijos.items():
@@ -158,18 +149,18 @@ def dibujar_arbol(nodo, dot=None, padre=None, etiqueta=None, contador=[0]):
             dibujar_arbol(h, dot, nid, str(v), contador)
     return dot
 
-
+# --- Predicción interactiva ---
 def predecir(nodo, ejemplo):
     if nodo.es_hoja:
         return nodo.clase
     val = ejemplo.get(nodo.atributo)
     if val not in nodo.hijos:
-        val = max(nodo.hijos, key=lambda k: len(nodo.hijos[k].hijos) if not nodo.hijos[k].es_hoja else 0)
+        val = next(iter(nodo.hijos))
     return predecir(nodo.hijos[val], ejemplo)
 
-
+# --- App Streamlit ---
 def procesar_arbol_decision():
-    st.title("🌳 Árbol de Decisión ID3 con explicación paso a paso")
+    st.title("🌳 Árbol de Decisión ID3 - Proceso Profesor")
     uf = st.file_uploader("Sube CSV/XLSX", type=['csv','xlsx'])
     if uf:
         df = pd.read_csv(uf) if uf.name.endswith('csv') else pd.read_excel(uf)
@@ -178,7 +169,6 @@ def procesar_arbol_decision():
     if 'df' not in st.session_state:
         st.info("Por favor, sube un archivo para continuar.")
         return
-
     df = st.session_state['df']
     st.subheader("Datos cargados")
     st.dataframe(df)
@@ -187,36 +177,32 @@ def procesar_arbol_decision():
     target = st.selectbox("Seleccione target", cols, index=0)
     feats = st.multiselect("Seleccione features", [c for c in cols if c != target])
 
-    if st.button("Generar árbol ID3"):
+    if st.button("Construir árbol ID3"):
         if not feats:
-            st.error("Debe seleccionar al menos una variable de entrada.")
+            st.error("Debe seleccionar al menos una variable.")
             return
         df_model = df[feats + [target]].astype(str)
-        st.session_state['arbol'] = construir_arbol_interactivo(df_model, feats, target)
+        st.session_state['arbol'] = construir_arbol_interactivo(df_logger, feats, target)
         st.session_state['reglas'] = extraer_reglas(st.session_state['arbol'])
         st.session_state['ok'] = True
 
     if st.session_state.get('ok'):
-        st.success("Árbol construido correctamente.")
-        st.subheader("📋 Reglas de Clasificación")
-        for i, regla in enumerate(st.session_state['reglas'], 1):
-            st.markdown(f"**Regla {i}:** {regla}")
-        st.subheader("🌳 Diagrama del Árbol")
+        st.success("Árbol construido.")
+        st.subheader("Reglas")
+        for i, r in enumerate(st.session_state['reglas'], 1):
+            st.markdown(f"**Regla {i}:** {r}")
+        st.subheader("Diagrama")
         st.graphviz_chart(dibujar_arbol(st.session_state['arbol']))
 
-        st.subheader("🧪 Prueba de predicción")
+        st.subheader("Prueba de predicción")
         with st.form('form_pred'):
-            ejemplo = {}
+            ej = {}
             for c in feats:
-                opts = sorted(set(st.session_state['df'][c].unique()) | {'?'})
-                ejemplo[c] = st.selectbox(c, opts, index=opts.index('?'))
+                opts = sorted(set(df[c].unique()) | {'?'})
+                ej[c] = st.selectbox(c, opts, index=opts.index('?'))
             if st.form_submit_button('Predecir'):
-                pr = predecir(st.session_state['arbol'], ejemplo)
+                pr = predecir(st.session_state['arbol'], ej)
                 st.success(f"Predicción: {pr}")
 
-
-def run():
-    procesar_arbol_decision()
-
 if __name__ == '__main__':
-    run()
+    procesar_arbol_decision()
