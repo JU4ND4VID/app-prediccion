@@ -34,7 +34,7 @@ algoritmo_seleccionado = st.sidebar.selectbox(
     )
 )
 
-if explicacion_seleccionada != "Ninguna":
+if explicacion_seleccionada != "Algoritmos":
     if explicacion_seleccionada == "Árbol de Decisión":
         explicaciones.mostrar_explicacion_id3()
     elif explicacion_seleccionada == "Regresión Lineal":
