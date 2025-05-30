@@ -7,8 +7,7 @@ import unicodedata
 # --- Normalización y limpieza ---
 def normalizar_texto(texto):
     texto = str(texto).strip().lower()
-    texto = ''.join(c for c in unicodedata.normalize('NFD', texto)
-                    if unicodedata.category(c) != 'Mn')
+    texto = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
     return texto
 
 def corregir_errores_ortograficos(valor):
@@ -33,19 +32,23 @@ def calcular_entropia(etiquetas, base=None):
     return ent
 
 # --- Entropía condicional estilo profesor ---
-def entropia_condicional(data, atributo, target):
+def entropia_condicional(data, atributo, target, clases_global):
+    """
+    Muestra línea a línea el cálculo de E(S|atributo) usando base=k=|clases_global|
+    """
     df = data[data[atributo] != '?']
     valores, conteos = np.unique(df[atributo], return_counts=True)
     n_total = conteos.sum()
-    k = len(np.unique(df[target]))
+    k = len(clases_global)
     st.write(f"Para '{atributo}':")
     E_cond = 0.0
     for v, c in zip(valores, conteos):
         subset = df[df[atributo] == v][target]
         n_sub = len(subset)
-        clases, cnts = np.unique(subset, return_counts=True)
+        # construir términos para todas las clases globales
         terminos = []
-        for cnt in cnts:
+        for cls in clases_global:
+            cnt = np.sum(subset == cls)
             terminos.append(f"{cnt}/{n_sub}*LOG({cnt}/{n_sub};{k})")
         formula = ' + '.join(terminos)
         contrib = (c / n_total) * calcular_entropia(subset, base=k)
@@ -63,27 +66,32 @@ class NodoDecision:
         self.clase = clase
 
 # --- Construcción recursiva ---
-def construir_arbol_interactivo(data, atributos, target):
+def construir_arbol_interactivo(data, atributos, target, clases_global=None):
+    # inicializar clases globales la primera vez
+    if clases_global is None:
+        clases_global = list(np.unique(data[target]))
     df = data[data[target] != '?']
     if df.empty:
         st.write("⚠️ No hay datos, asigno clase 'Desconocido'")
         return NodoDecision(es_hoja=True, clase='Desconocido')
-
-    # Calculamos E(S|A) para cada atributo y elegimos el mínimo
-    entropias = {attr: entropia_condicional(df, attr, target) for attr in atributos}
+    # calcular E_cond para cada atributo
+    entropias = {}
+    for attr in atributos:
+        entropias[attr] = entropia_condicional(df, attr, target, clases_global)
+    # seleccionar el atributo con menor entropía condicional
     mejor = min(entropias, key=entropias.get)
     st.write(f"➡️ Mejor atributo = {mejor} (E(S|{mejor}) = {entropias[mejor]:.9f})\n")
-
     nodo = NodoDecision(atributo=mejor)
+    # particionar
     for val in np.unique(df[mejor]):
-        sub = df[df[mejor] == val]
-        if len(sub[target].unique()) == 1:
-            clase = sub[target].iloc[0]
-            st.write(f"▷ Particionando {mejor} = {val} → Nodo hoja con clase: {clase}\n")
-            nodo.hijos[val] = NodoDecision(es_hoja=True, clase=clase)
+        subset = df[df[mejor] == val]
+        if len(subset[target].unique()) == 1:
+            clase_leaf = subset[target].iloc[0]
+            st.write(f"▷ Particionando {mejor} = {val} → Nodo hoja con clase: {clase_leaf}\n")
+            nodo.hijos[val] = NodoDecision(es_hoja=True, clase=clase_leaf)
         else:
             resto = [a for a in atributos if a != mejor]
-            nodo.hijos[val] = construir_arbol_interactivo(sub, resto, target)
+            nodo.hijos[val] = construir_arbol_interactivo(subset, resto, target, clases_global)
     return nodo
 
 # --- Extracción de reglas ---
@@ -100,8 +108,8 @@ def extraer_reglas(nodo, camino=None):
 # --- Dibujo del árbol ---
 def dibujar_arbol(nodo, dot=None, padre=None, etiqueta=None, contador=[0]):
     if dot is None:
-        dot = Digraph(); dot.node('0','Inicio'); padre='0'; contador[0]=1
-    nid = str(contador[0]); contador[0]+=1
+        dot = Digraph(); dot.node('0','Inicio'); padre='0'; contador[0] = 1
+    nid = str(contador[0]); contador[0] += 1
     if nodo.es_hoja:
         dot.node(nid, f"Categoría: {nodo.clase}", shape='box', style='filled', color='lightgreen')
     else:
@@ -123,63 +131,48 @@ def predecir(nodo, ejemplo):
 
 # --- App Streamlit ---
 def procesar_arbol_decision():
-    st.title("🌳 Árbol de Decisión ID3 - Proceso Profesor")
-    uploaded_file = st.file_uploader("Sube CSV o Excel", type=["csv", "xlsx"])
-    if uploaded_file:
-        if uploaded_file.name.endswith(".csv"):
-            df = pd.read_csv(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file)
+    st.title("🌳 Árbol ID3 - Proceso Profesor")
+    uf = st.file_uploader("Sube CSV/XLSX", type=['csv','xlsx'])
+    if uf:
+        df = pd.read_csv(uf) if uf.name.endswith('csv') else pd.read_excel(uf)
         df = limpiar_y_normalizar_df(df, df.columns.tolist())
         st.session_state['df'] = df
-
     if 'df' not in st.session_state:
         st.info("Por favor, sube un archivo para continuar.")
         return
-
     df = st.session_state['df']
     st.subheader("Datos cargados")
     st.dataframe(df)
-
     cols = df.columns.tolist()
-    target = st.selectbox("Selecciona la variable a predecir", cols)
-    features = st.multiselect("Selecciona las variables de entrada", [c for c in cols if c != target])
-
+    target = st.selectbox("Selecciona target", cols, index=0)
+    features = st.multiselect("Selecciona features", [c for c in cols if c != target])
     if st.button("Generar árbol ID3"):
         if not features:
-            st.error("Selecciona al menos una variable de entrada.")
+            st.error("Selecciona al menos una variable.")
             return
         df_model = df[features + [target]].astype(str)
         arbol = construir_arbol_interactivo(df_model, features, target)
         st.session_state['arbol'] = arbol
         st.session_state['reglas'] = extraer_reglas(arbol)
         st.session_state['ok'] = True
-
     if st.session_state.get('ok'):
         st.success("Árbol construido correctamente.")
         st.subheader("Reglas de Clasificación")
-        for i, regla in enumerate(st.session_state['reglas'], 1):
-            st.markdown(f"**Regla {i}:** {regla}")
+        for i, r in enumerate(st.session_state['reglas'], 1): st.markdown(f"**Regla {i}:** {r}")
         st.subheader("Diagrama del Árbol")
         st.graphviz_chart(dibujar_arbol(st.session_state['arbol']))
-
         st.subheader("Prueba de predicción")
-        with st.form("form_pred"):
+        with st.form('form_pred'):
             ejemplo = {}
             for c in features:
-                opciones = sorted(set(df_model[c].unique()) | {"?"})
-                ejemplo[c] = st.selectbox(c, opciones, index=opciones.index("?"))
-            if st.form_submit_button("Predecir"):
-                pred = predecir(st.session_state['arbol'], ejemplo)
-                if pred:
-                    st.success(f"Predicción: {pred}")
-                else:
-                    st.error("No se pudo predecir.")
+                opts = sorted(set(df_model[c].unique()) | {'?'})
+                ejemplo[c] = st.selectbox(c, opts, index=opts.index('?'))
+            if st.form_submit_button('Predecir'):
+                pr = predecir(st.session_state['arbol'], ejemplo)
+                if pr: st.success(f"Predicción: {pr}")
+                else: st.error("No se pudo predecir.")
 
-# Función run para compatibilidad y tests
+# Función run
+def run(): procesar_arbol_decision()
 
-def run():
-    procesar_arbol_decision()
-
-if __name__ == "__main__":
-    run()
+if __name__ == '__main__': run()
