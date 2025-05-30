@@ -13,7 +13,7 @@ explicacion_seleccionada = st.sidebar.radio(
         "Árbol de Decisión",
         "Regresión Lineal",
         "Regresión Múltiple",
-        "K-media",
+        "K-medias",
         "K-modas"        
         
     )
