@@ -34,27 +34,32 @@ def calcular_entropia(etiquetas, base=None):
 # --- Entropía condicional estilo profesor ---
 def entropia_condicional(data, atributo, target, clases_global):
     """
-    Muestra línea a línea el cálculo de E(S|atributo) usando base=k=|clases_global|
+    Muestra el cálculo de E(S|atributo) en un bloque expander con formato y código.
     """
     df = data[data[atributo] != '?']
     valores, conteos = np.unique(df[atributo], return_counts=True)
     n_total = conteos.sum()
     k = len(clases_global)
-    st.write(f"Para '{atributo}':")
-    E_cond = 0.0
-    for v, c in zip(valores, conteos):
-        subset = df[df[atributo] == v][target]
-        n_sub = len(subset)
-        # construir términos para todas las clases globales
-        terminos = []
-        for cls in clases_global:
-            cnt = np.sum(subset == cls)
-            terminos.append(f"{cnt}/{n_sub}*LOG({cnt}/{n_sub};{k})")
-        formula = ' + '.join(terminos)
-        contrib = (c / n_total) * calcular_entropia(subset, base=k)
-        E_cond += contrib
-        st.write(f"= {c}/{n_total} * ( -[{formula}] ) = {contrib:.9f}")
-    st.write(f"E(S|{atributo}) = {E_cond:.9f}\n")
+
+    # Bloque expandible para claridad
+    with st.expander(f"🔍 Cálculo E(S|{atributo})", expanded=True):
+        st.markdown(f"### Para '{atributo}':")
+        E_cond = 0.0
+        for v, c in zip(valores, conteos):
+            subset = df[df[atributo] == v][target]
+            n_sub = len(subset)
+            # construir términos para cada clase global
+            terminos = []
+            for cls in clases_global:
+                cnt = np.sum(subset == cls)
+                terminos.append(f"{cnt}/{n_sub}*LOG({cnt}/{n_sub};{k})")
+            formula = ' + '.join(terminos)
+            contrib = (c / n_total) * calcular_entropia(subset, base=k)
+            E_cond += contrib
+            # mostrar cada paso en un bloque de código
+            st.code(f"= {c}/{n_total} * (-[{formula}]) = {contrib:.9f}", language='text')
+        # resultado final en negrita
+        st.markdown(f"**E(S|{atributo}) = {E_cond:.9f}**")
     return E_cond
 
 # --- Nodo de decisión ---
