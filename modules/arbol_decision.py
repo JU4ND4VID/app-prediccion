@@ -136,7 +136,7 @@ def predecir(nodo, ejemplo):
 
 # --- App Streamlit ---
 def procesar_arbol_decision():
-    st.title("🌳 Árbol ID3 - Proceso Profesor")
+    st.title("🌳 Árbol ID3 ")
     # 1) Carga de datos ignorando valores con '?'
     uploaded = st.file_uploader("Sube CSV o Excel", type=["csv","xlsx"])
     if not uploaded:
@@ -203,6 +203,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-def run(): procesar_arbol_decision()
-
-if __name__ == '__main__': run()

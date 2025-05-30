@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 def procesar_regresion_multiple():
-    st.title("📊 Regresión Lineal Múltiple - Cálculo paso a paso")
+    st.title("📊 Regresión Lineal Múltiple")
 
     uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
     if uploaded_file is None:

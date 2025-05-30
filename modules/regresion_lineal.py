@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 def procesar_regresion_lineal():
-    st.title("📈 Regresión Lineal Simple - Cálculo paso a paso")
+    st.title("📈 Regresión Lineal Simple ")
 
     uploaded_file = st.file_uploader("Sube tu archivo CSV o Excel", type=["csv", "xlsx"])
     if uploaded_file is not None:

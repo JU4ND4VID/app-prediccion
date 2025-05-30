@@ -1,7 +1,7 @@
 import streamlit as st
 
 def mostrar_explicacion_regresion_lineal():
-    st.title("📈 Explicación paso a paso de Regresión Lineal Simple")
+    st.title("📈 Explicación paso a paso de Regresión Lineal Simple 📈")
 
     st.markdown(r"""
 **1. ¿Qué es la Regresión Lineal Simple?**  
@@ -64,18 +64,18 @@ Una vez calculados \(\beta_0\) y \(\beta_1\), se predice \(Y\) para nuevos \(X\)
 
 
 
-def mostrar_explicacion_k_means():
-    st.title("📌 Explicación paso a paso del algoritmo K-means")
+def mostrar_explicacion_k_medias():
+    st.title("🧠 Explicación paso a paso del algoritmo K-medias 🧠" )
 
     st.markdown(r"""
-    K-means es un algoritmo de clustering que agrupa datos en \(k\) clusters basados en la distancia a centroides.
+    K-medias es un algoritmo de clustering que agrupa datos en \(k\) clusters basados en la distancia a centroides.
 
     ### Proceso general:
 
     1. Se elige el número de clusters \(k\).
     2. Se inicializan los centroides (aleatoriamente o por métodos heurísticos).
     3. Cada punto se asigna al cluster cuyo centroide está más cercano (usualmente distancia euclidiana).
-    4. Se recalculan los centroides como la media de los puntos asignados a cada cluster.
+    4. Se recalculan los centroides como la medias de los puntos asignados a cada cluster.
     5. Se repiten los pasos 3 y 4 hasta que las asignaciones no cambien (convergencia).
     
     ### Características:
@@ -92,11 +92,9 @@ def mostrar_explicacion_k_means():
     - Detección de patrones en datos.
     """)
 def mostrar_explicacion_k_modas():
-    st.title("Explicación de K-modas")
+    st.title("✨ Explicación de K-modas ✨")
     st.markdown("""
-    ## ¿Qué es K-modas?
-
-    K-modas es una técnica de clustering para datos categóricos. Similar a K-means, pero en lugar de usar medias y distancia euclidiana, usa modas (valores más frecuentes) y una medida de disimilitud basada en conteo de diferencias.
+    K-modas es una técnica de clustering para datos categóricos. Similar a K-medias, pero en lugar de usar medias y distancia euclidiana, usa modas (valores más frecuentes) y una medida de disimilitud basada en conteo de diferencias.
 
     ### Proceso básico:
     1. Se asignan los modos iniciales por cluster según la moda en los datos conocidos.
@@ -110,13 +108,13 @@ def mostrar_explicacion_k_modas():
     - Segmentación de clientes por atributos categóricos.
     - Análisis de comportamiento con variables no numéricas.
 
-    ### Diferencias con K-means:
-    - K-means usa medias y distancia euclidiana (numérico).
+    ### Diferencias con K-medias:
+    - K-medias usa medias y distancia euclidiana (numérico).
     - K-modas usa modas y distancia por conteo de diferencias (categórico).
 
     """)
 def mostrar_explicacion_id3():
-    st.title("🌟 Explicación del Árbol de Decisión ID3")
+    st.title("🌲 Explicación del Árbol de Decisión ID3 🌲")
     st.markdown(r"""
 **Proceso de construcción del Árbol de Decisión ID3**
 
@@ -163,7 +161,7 @@ Si A1 = v1 y A2 = v2 …, entonces Clase = c
 )
 
 def mostrar_explicacion_regresion_multiple():
-    st.title("📊 Explicación paso a paso de Regresión Lineal Múltiple")
+    st.title("📊 Explicación paso a paso de Regresión Lineal Múltiple 📊")
 
     st.markdown("### 1. ¿Qué es la Regresión Lineal Múltiple?")
     st.markdown("""
@@ -240,12 +238,4 @@ Y_m
 - Por cada habitación adicional, el precio aumenta en 2.50 unidades monetarias.
         """)
 
-    st.markdown("---")
-    st.markdown("### 6. Uso práctico")
-    st.markdown("La ecuación resultante se puede usar para predecir nuevos valores de \( Y \):")
-
-    st.code("""
-# Ejemplo de predicción
-X_nuevo = [1, tamanio, habitaciones]
-prediccion = X_nuevo @ beta_hat  # producto matricial
-    """, language="python")
+    

@@ -1,5 +1,3 @@
-# modules/k_means.py
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -40,8 +38,8 @@ def mostrar_grafica_pca(X, asign_idx, centroides, titulo):
     st.pyplot(plt)
     plt.close()
 
-def procesar_k_means():
-    st.title("📊 K-means clustering paso a paso")
+def procesar_k_medias():
+    st.title("📊 K-medias")
 
     # 1) Carga de datos
     uploaded = st.file_uploader("Sube CSV o Excel", type=["csv","xlsx"])
@@ -99,7 +97,7 @@ def procesar_k_means():
     convergencia = False
     max_iter = 20
 
-    # 6) Iteraciones de K-means
+    # 6) Iteraciones de K-medias
     for it in range(1, max_iter+1):
         dist = np.vstack([euclidean_distance(X_known, c) for c in centroides]).T  # n×k
         asign_idx = np.argmin(dist, axis=1)
@@ -158,4 +156,4 @@ def procesar_k_means():
     st.dataframe(resultado.reset_index(drop=True).round(2))
 
 def run():
-    procesar_k_means()
+    procesar_k_medias()
