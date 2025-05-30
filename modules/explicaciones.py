@@ -103,60 +103,6 @@ def mostrar_explicacion_regresion_lineal():
 
     """)
 
-def mostrar_explicacion_id3():
-    st.title("Explicación del algoritmo Árbol de Decisión ID3")
-    st.markdown(r"""
-    # Proceso de construcción del Árbol de Decisión ID3
-
-    1. **Introducción**  
-    El algoritmo ID3 construye un árbol de decisión que clasifica datos usando el criterio de máxima ganancia de información, basada en la entropía.
-
-    2. **Entropía**  
-    Mide la impureza o incertidumbre de un conjunto de datos.  
-    Fórmula:
-    """)
-    st.latex(r"Entropía(S) = - \sum_{i=1}^c p_i \log_2(p_i)")
-    st.markdown(r"""
-    donde:  
-    - \(S\) es el conjunto de datos,  
-    - \(c\) es el número de clases,  
-    - \(p_i\) es la proporción de ejemplos en la clase \(i\).
-
-    Si todos los datos pertenecen a una sola clase, la entropía es 0 (conjunto puro).  
-    Si las clases están distribuidas uniformemente, la entropía es máxima.
-
-    3. **Ganancia de Información**  
-    Mide cuánto reduce la entropía un atributo al dividir los datos.  
-    Fórmula:
-    """)
-    st.latex(r"Ganancia(S, A) = Entropía(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|} \cdot Entropía(S_v)")
-    st.markdown(r"""
-    donde:  
-    - \(S_v\) es el subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
-
-    Elegimos el atributo con **máxima ganancia** para dividir.
-
-    4. **Proceso Recursivo**  
-    Calcula la entropía y ganancia para cada atributo.  
-    Escoge el atributo con mayor ganancia para crear un nodo.  
-    Divide el conjunto según los valores del atributo.  
-    Repite recursivamente en cada subconjunto hasta que:  
-    - Todos los ejemplos son de la misma clase (entropía = 0).  
-    - No quedan más atributos para dividir.
-
-    5. **Construcción del Árbol**  
-    El nodo raíz es el atributo con mayor ganancia.  
-    Cada rama corresponde a un valor del atributo.  
-    Las hojas contienen las clases finales.
-
-    6. **Extracción de Reglas**  
-    Cada camino desde la raíz hasta una hoja representa una regla.  
-    La regla concatena las condiciones de cada nodo en el camino.  
-
-    Ejemplo:  
-    `Si Nivel académico = Magíster y Estrato socioeconómico = Medio y Área de estudio = Ingeniería, entonces Categoría = Titular`
-    """)
-
 
 def mostrar_explicacion_regresion_multiple():
     st.title("📊 Explicación paso a paso de Regresión Lineal Múltiple")
@@ -304,4 +250,50 @@ def mostrar_explicacion_k_modas():
     - K-modas usa modas y distancia por conteo de diferencias (categórico).
 
     """)
+def mostrar_explicacion_id3():
+    st.title("🌟 Explicación del Árbol de Decisión ID3")
+    st.markdown(r"""
+**Proceso de construcción del Árbol de Decisión ID3**
 
+1. **Introducción**  
+El algoritmo ID3 construye un árbol de decisión que clasifica datos buscando, en cada nodo, el atributo que maximiza la ganancia de información (reducción de entropía).
+
+2. **Entropía**  
+Mide la impureza o incertidumbre de un conjunto de datos:
+""")
+    st.latex(r"E(S) = - \sum_{i=1}^{c} p_i \log_k(p_i)")
+    st.markdown(r"""
+- \(S\): conjunto de datos.  
+- \(c\): número de clases.  
+- \(p_i\): proporción de ejemplos en la clase \(i\).
+
+Si todas las instancias son de la misma clase, \(E(S)=0\). Si están uniformemente distribuidas, \(E(S)\) es máximo.
+
+3. **Ganancia de Información**  
+Cuantifica cuánto disminuye la entropía al dividir por un atributo \(A\):
+""")
+    st.latex(r"G(S,A) = E(S) - \sum_{v \in Valores(A)} \frac{|S_v|}{|S|}\,E(S_v)")
+    st.markdown(r"""
+- \(S_v\): subconjunto de \(S\) donde el atributo \(A\) toma el valor \(v\).
+
+Se elige el atributo con **mayor** \(G(S,A)\) (o **menor** entropía condicional).
+
+4. **Proceso recursivo**  
+- Calcular \(E(S)\).  
+- Para cada atributo restante, calcular \(G(S,A)\).  
+- Crear un nodo con el mejor atributo y dividir \(S\) según sus valores.  
+- Repetir en cada rama hasta que:  
+  1. Todas las instancias queden en la misma clase (entropía = 0).  
+  2. No queden atributos.
+
+5. **Construcción del árbol**  
+- **Nodos internos**: representan pruebas sobre atributos.  
+- **Ramas**: representan los valores de esos atributos.  
+- **Hojas**: contienen las clases finales.
+
+6. **Extracción de reglas**  
+Cada camino desde la raíz hasta una hoja produce una regla del tipo:  
+```
+Si A1 = v1 y A2 = v2 …, entonces Clase = c
+```"""
+)
