@@ -162,50 +162,36 @@ Si A1 = v1 y A2 = v2 …, entonces Clase = c
 """
 )
 
-import streamlit as st
-
 def mostrar_explicacion_regresion_multiple():
     st.title("📊 Explicación paso a paso de Regresión Lineal Múltiple")
 
-    st.markdown(r"""
-**1. ¿Qué es la Regresión Lineal Múltiple?**
-
-Es una extensión de la regresión lineal simple que modela la relación entre una variable dependiente \(Y\) y múltiples variables independientes \(X_1, X_2, ..., X_n\).
-
-La fórmula general es:
-
-\[
-Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_n X_n + \varepsilon
-\]
-
+    st.markdown("### 1. ¿Qué es la Regresión Lineal Múltiple?")
+    st.markdown("""
+Es una extensión de la regresión lineal simple que modela la relación entre una variable dependiente \( Y \) y múltiples variables independientes \( X_1, X_2, ..., X_n \).
+    """)
+    st.latex(r"Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_n X_n + \varepsilon")
+    st.markdown("""
 Donde:  
-- \(\beta_0\) es el intercepto.  
-- \(\beta_j\) son los coeficientes de las variables independientes.  
-- \(\varepsilon\) es el término de error.
-""")
+- \( \beta_0 \): Intercepto.  
+- \( \beta_j \): Coeficientes asociados a cada variable independiente.  
+- \( \varepsilon \): Error aleatorio o residual.
+    """)
 
     st.markdown("---")
-
-    st.markdown(r"""
-**2. Objetivo**
-
-Encontrar los coeficientes \(\boldsymbol{\beta}\) que minimizan el error cuadrático entre los valores observados y los predichos, usando la suma de residuos al cuadrado.
-""")
+    st.markdown("### 2. Objetivo")
+    st.markdown("""
+Encontrar los coeficientes \( \boldsymbol{\beta} \) que minimicen la suma de errores cuadráticos entre los valores observados y los valores predichos.
+    """)
+    st.latex(r"\min_{\boldsymbol{\beta}} \left( \mathbf{Y} - \mathbf{X} \boldsymbol{\beta} \right)^T \left( \mathbf{Y} - \mathbf{X} \boldsymbol{\beta} \right)")
 
     st.markdown("---")
+    st.markdown("### 3. Representación matricial")
 
-    st.markdown(r"""
-**3. Representación matricial**
+    st.markdown("El modelo se puede escribir como:")
+    st.latex(r"\mathbf{Y} = \mathbf{X} \boldsymbol{\beta}")
 
-El modelo puede representarse como:
-
-\[
-\mathbf{Y} = \mathbf{X} \boldsymbol{\beta}
-\]
-
-Donde:
-
-\[
+    st.markdown("Donde:")
+    st.latex(r"""
 \mathbf{Y} =
 \begin{bmatrix}
 Y_1 \\
@@ -230,52 +216,36 @@ Y_m
 \vdots \\
 \beta_n
 \end{bmatrix}
-\]
 """)
 
     st.markdown("---")
-
-    st.markdown(r"""
-**4. Cálculo de los coeficientes**
-
-Usamos la ecuación normal:
-
-\[
-\boldsymbol{\beta} = (\mathbf{X}^T \mathbf{X})^{-1} \mathbf{X}^T \mathbf{Y}
-\]
-
-Esta fórmula proporciona los coeficientes que **minimizan** la suma de errores cuadrados.
-""")
+    st.markdown("### 4. Cálculo de los coeficientes")
+    st.markdown("Usamos la ecuación normal para obtener los coeficientes óptimos:")
+    st.latex(r"\boldsymbol{\beta} = (\mathbf{X}^T \mathbf{X})^{-1} \mathbf{X}^T \mathbf{Y}")
+    st.markdown("Esta fórmula proporciona los valores de \( \boldsymbol{\beta} \) que minimizan la suma de los errores cuadráticos.")
 
     st.markdown("---")
+    st.markdown("### 5. Interpretación de coeficientes")
+    st.markdown("""
+- \( \beta_0 \): Valor esperado de \( Y \) cuando todas las variables \( X_j = 0 \).  
+- \( \beta_j \): Cambio esperado en \( Y \) por unidad de cambio en \( X_j \), manteniendo las demás variables constantes.
+    """)
 
-    st.markdown(r"""
-**5. Interpretación de coeficientes**
-
-Cada \(\beta_i\) representa el cambio esperado en \(Y\) por unidad de cambio en \(X_i\), manteniendo las demás variables constantes.
-""")
-
+    st.markdown("---")
     with st.expander("🔢 Ejemplo práctico", expanded=False):
-        st.markdown(r"""
-Supongamos que queremos predecir el precio de una casa según su tamaño (m²) y número de habitaciones:
-
-\[
-Precio = 31.04 + 1.4 \times Tamaño + 2.5 \times Habitaciones
-\]
-
-- Por cada metro cuadrado adicional, el precio aumenta en 1.4 unidades monetarias.  
-- Por cada habitación adicional, aumenta en 2.5 unidades.
-""")
+        st.markdown("Ejemplo: predecir el precio de una casa con base en su tamaño (m²) y número de habitaciones:")
+        st.latex(r"\widehat{Precio} = 31.04 + 1.40 \times Tamaño + 2.50 \times Habitaciones")
+        st.markdown("""
+- Por cada metro cuadrado adicional, el precio aumenta en 1.40 unidades monetarias.  
+- Por cada habitación adicional, el precio aumenta en 2.50 unidades monetarias.
+        """)
 
     st.markdown("---")
+    st.markdown("### 6. Uso práctico")
+    st.markdown("La ecuación resultante se puede usar para predecir nuevos valores de \( Y \):")
 
-    st.markdown(r"""
-**6. Uso práctico**
-
-La ecuación resultante se usa para realizar predicciones basadas en múltiples variables independientes:
-
-```python
+    st.code("""
 # Ejemplo de predicción
 X_nuevo = [1, tamanio, habitaciones]
 prediccion = X_nuevo @ beta_hat  # producto matricial
-""")
+    """, language="python")
