@@ -176,5 +176,10 @@ def procesar_arbol_decision():
                 else:
                     st.error("No se pudo predecir.")
 
-if __name__ == "__main__":
+# Función run para compatibilidad y tests
+
+def run():
     procesar_arbol_decision()
+
+if __name__ == "__main__":
+    run()
