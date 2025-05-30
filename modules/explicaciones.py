@@ -4,105 +4,63 @@ def mostrar_explicacion_regresion_lineal():
     st.title("📈 Explicación paso a paso de Regresión Lineal Simple")
 
     st.markdown(r"""
-    ### ¿Qué es la Regresión Lineal Simple?
-
-    Es un método estadístico para modelar la relación entre una variable dependiente \(Y\) y una variable independiente \(X\) usando una línea recta.
-
-    La fórmula general de la recta es:
-    """)
+**1. ¿Qué es la Regresión Lineal Simple?**  
+Es un método estadístico que modela la relación entre:
+- Variable dependiente \(Y\)
+- Variable independiente \(X\)
+mediante una línea recta.
+""")
     st.latex(r"Y = \beta_0 + \beta_1 X + \varepsilon")
 
     st.markdown(r"""
-    Donde:  
-    - \(\beta_0\) es el intercepto (ordenada al origen).  
-    - \(\beta_1\) es la pendiente (cambio esperado en \(Y\) por unidad de cambio en \(X\)).  
-    - \(\varepsilon\) es el término de error o residual.
+**2. Objetivo**  
+Encontrar \(\beta_0\) y \(\beta_1\) que minimicen el **error cuadrático** entre los valores observados \(Y_i\) y los predichos \(\hat{Y}_i\).
+""")
 
-    ---
+    with st.expander("🔢 Paso 1: Cálculo de medias", expanded=True):
+        st.markdown(r"""
+Se calcula la media de \(X\) y de \(Y\):
+""")
+        st.latex(r"\bar{X} = \frac{1}{n} \sum_{i=1}^n X_i \quad;\quad \bar{Y} = \frac{1}{n} \sum_{i=1}^n Y_i")
 
-    ### Objetivo
+    with st.expander("🔢 Paso 2: Cálculo de la pendiente \(\beta_1\)", expanded=False):
+        st.markdown(r"""
+Dos fórmulas equivalentes:
+""")
+        st.latex(r"\beta_1 = \frac{\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i=1}^n (X_i - \bar{X})^2}")
+        st.latex(r"\beta_1 = \frac{n \sum X_i Y_i - \sum X_i \sum Y_i}{n \sum X_i^2 - (\sum X_i)^2}")
 
-    Encontrar los valores de \(\beta_0\) y \(\beta_1\) que minimicen el error cuadrático entre los valores observados y los predichos por el modelo.
+    with st.expander("🔢 Paso 3: Cálculo del intercepto \(\beta_0\)", expanded=False):
+        st.latex(r"\beta_0 = \bar{Y} - \beta_1 \bar{X}")
 
-    ---
+    st.markdown(r"""
+**4. Ecuación final del modelo**  
+Se sustituye para obtener:\n
+\[
+\hat{Y} = \beta_0 + \beta_1 X
+\]
+""")
 
-    ### Paso 1: Cálculo de medias
+    with st.expander("📊 Paso 5: Evaluación del modelo", expanded=False):
+        st.markdown(r"""
+**Metricas comunes**:
+- **Error Cuadrático Medio (MSE):**
+""")
+        st.latex(r"MSE = \frac{1}{n} \sum_{i=1}^n (Y_i - \hat{Y}_i)^2")
+        st.markdown(r"""
+- **Coeficiente de Determinación \(R^2\):**
+""")
+        st.latex(r"R^2 = 1 - \frac{\sum (Y_i - \hat{Y}_i)^2}{\sum (Y_i - \bar{Y})^2}")
 
-    Se calcula la media de \(X\) y de \(Y\):
+    st.markdown(r"""
+**6. Interpretación**  
+- Si \(\beta_1 > 0\), \(Y\) tiende a aumentar con \(X\).  
+- Si \(\beta_1 < 0\), \(Y\) tiende a disminuir con \(X\).  
+- \(R^2\) cerca de 1 indica buen ajuste; cerca de 0, poco explicativo.
 
-    \[
-    \bar{X} = \frac{1}{n} \sum_{i=1}^n X_i \quad,\quad \bar{Y} = \frac{1}{n} \sum_{i=1}^n Y_i
-    \]
-
-    ---
-
-    ### Paso 2: Cálculo de la pendiente \(\beta_1\)
-
-    \[
-    \beta_1 = \frac{\sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})}{\sum_{i=1}^n (X_i - \bar{X})^2}
-    \]
-
-    También expresado como:
-
-    \[
-    \beta_1 = \frac{n \sum X_i Y_i - \sum X_i \sum Y_i}{n \sum X_i^2 - (\sum X_i)^2}
-    \]
-
-    ---
-
-    ### Paso 3: Cálculo del intercepto \(\beta_0\)
-
-    \[
-    \beta_0 = \bar{Y} - \beta_1 \bar{X}
-    \]
-
-    ---
-
-    ### Paso 4: Ecuación final del modelo
-
-    \[
-    \hat{Y} = \beta_0 + \beta_1 X
-    \]
-
-    donde \(\hat{Y}\) es el valor predicho.
-
-    ---
-
-    ### Paso 5: Evaluación del modelo
-
-    Se utilizan métricas como:
-
-    - **Error Cuadrático Medio (MSE):**
-
-    \[
-    MSE = \frac{1}{n} \sum_{i=1}^n (Y_i - \hat{Y}_i)^2
-    \]
-
-    - **Coeficiente de Determinación \(R^2\):**
-
-    \[
-    R^2 = 1 - \frac{\sum (Y_i - \hat{Y}_i)^2}{\sum (Y_i - \bar{Y})^2}
-    \]
-
-    Que indica qué proporción de la variabilidad de \(Y\) es explicada por \(X\).
-
-    ---
-
-    ### Interpretación
-
-    - Si \(\beta_1 > 0\), \(Y\) tiende a aumentar cuando \(X\) aumenta.  
-    - Si \(\beta_1 < 0\), \(Y\) tiende a disminuir cuando \(X\) aumenta.  
-    - Si \(R^2\) está cerca de 1, el modelo explica bien la relación.  
-    - Si está cerca de 0, el modelo explica poco.
-
-    ---
-
-    ### Uso práctico
-
-    Una vez calculados \(\beta_0\) y \(\beta_1\), puedes predecir \(Y\) para cualquier nuevo valor de \(X\) usando la fórmula del modelo.
-
-    """)
-
+**7. Uso práctico**  
+Una vez calculados \(\beta_0\) y \(\beta_1\), se predice \(Y\) para nuevos \(X\) con la ecuación del modelo.
+""")
 
 def mostrar_explicacion_regresion_multiple():
     st.title("📊 Explicación paso a paso de Regresión Lineal Múltiple")
