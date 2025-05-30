@@ -62,125 +62,7 @@ Se sustituye para obtener:\n
 Una vez calculados \(\beta_0\) y \(\beta_1\), se predice \(Y\) para nuevos \(X\) con la ecuación del modelo.
 """)
 
-def mostrar_explicacion_regresion_multiple():
-    st.title("📊 Explicación paso a paso de Regresión Lineal Múltiple")
 
-    st.markdown(r"""
-### 1. ¿Qué es la Regresión Lineal Múltiple?
-
-Es una extensión de la regresión lineal simple que modela la relación entre una variable dependiente \(Y\) y múltiples variables independientes \(X_1, X_2, ..., X_n\).
-
-La fórmula general es:
-
-\[
-Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_n X_n + \varepsilon
-\]
-
-Donde:  
-- \(\beta_0\) es el intercepto.  
-- \(\beta_j\) son los coeficientes de las variables independientes.  
-- \(\varepsilon\) es el término de error.
-""")
-
-    st.markdown("---")
-
-    st.markdown(r"""
-### 2. Objetivo
-
-Encontrar los coeficientes \(\boldsymbol{\beta}\) que minimizan el error cuadrático entre los valores observados y los predichos, usando la suma de residuos al cuadrado.
-""")
-
-    st.markdown("---")
-
-    st.markdown(r"""
-### 3. Representación matricial
-
-El modelo puede representarse como:
-
-\[
-\mathbf{Y} = \mathbf{X} \boldsymbol{\beta}
-\]
-
-Donde:
-
-\[
-\mathbf{Y} =
-\begin{bmatrix}
-Y_1 \\
-Y_2 \\
-\vdots \\
-Y_m
-\end{bmatrix}
-,\
-\quad
-\
-\mathbf{X} =
-\begin{bmatrix}
-1 & X_{11} & X_{12} & \cdots & X_{1n} \\
-1 & X_{21} & X_{22} & \cdots & X_{2n} \\
-\vdots & \vdots & \vdots & \ddots & \vdots \\
-1 & X_{m1} & X_{m2} & \cdots & X_{mn}
-\end{bmatrix}
-,\
-\quad
-\
-\boldsymbol{\beta} =
-\begin{bmatrix}
-\beta_0 \\
-\beta_1 \\
-\beta_2 \\
-\vdots \\
-\beta_n
-\end{bmatrix}
-\]
-""")
-
-    st.markdown("---")
-
-    st.markdown(r"""
-### 4. Cálculo de los coeficientes
-
-Usamos la ecuación normal:
-
-\[
-\boldsymbol{\beta} = (\mathbf{X}^T \mathbf{X})^{-1} \mathbf{X}^T \mathbf{Y}
-\]
-
-Esta fórmula proporciona los coeficientes que **minimizan** la suma de errores cuadrados.
-""")
-
-    st.markdown("---")
-
-    st.markdown(r"""
-### 5. Interpretación de coeficientes
-
-Cada \(\beta_i\) representa el cambio esperado en \(Y\) por unidad de cambio en \(X_i\), manteniendo las demás variables constantes.
-""")
-
-    with st.expander("🔢 Ejemplo práctico", expanded=False):
-        st.markdown(r"""
-Supongamos que queremos predecir el precio de una casa según su tamaño (m²) y número de habitaciones:
-
-\[
-Precio = 31.04 + 1.4 \times Tamaño + 2.5 \times Habitaciones
-\]
-
-- Por cada metro cuadrado adicional, el precio aumenta en 1.4 unidades monetarias.  
-- Por cada habitación adicional, aumenta en 2.5 unidades.
-""")
-
-    st.markdown("---")
-
-    st.markdown(r"""
-### 6. Uso práctico
-
-La ecuación resultante se usa para realizar predicciones basadas en múltiples variables independientes:
-python
-# Ejemplo de predicción
-X_nuevo = [1, tamanio, habitaciones]
-prediccion = X_nuevo @ beta_hat  # producto matricial
-
-""")
 
 def mostrar_explicacion_k_means():
     st.title("📌 Explicación paso a paso del algoritmo K-means")
@@ -279,3 +161,121 @@ Cada camino desde la raíz hasta una hoja produce una regla del tipo:
 Si A1 = v1 y A2 = v2 …, entonces Clase = c
 """
 )
+
+import streamlit as st
+
+def mostrar_explicacion_regresion_multiple():
+    st.title("📊 Explicación paso a paso de Regresión Lineal Múltiple")
+
+    st.markdown(r"""
+**1. ¿Qué es la Regresión Lineal Múltiple?**
+
+Es una extensión de la regresión lineal simple que modela la relación entre una variable dependiente \(Y\) y múltiples variables independientes \(X_1, X_2, ..., X_n\).
+
+La fórmula general es:
+
+\[
+Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_n X_n + \varepsilon
+\]
+
+Donde:  
+- \(\beta_0\) es el intercepto.  
+- \(\beta_j\) son los coeficientes de las variables independientes.  
+- \(\varepsilon\) es el término de error.
+""")
+
+    st.markdown("---")
+
+    st.markdown(r"""
+**2. Objetivo**
+
+Encontrar los coeficientes \(\boldsymbol{\beta}\) que minimizan el error cuadrático entre los valores observados y los predichos, usando la suma de residuos al cuadrado.
+""")
+
+    st.markdown("---")
+
+    st.markdown(r"""
+**3. Representación matricial**
+
+El modelo puede representarse como:
+
+\[
+\mathbf{Y} = \mathbf{X} \boldsymbol{\beta}
+\]
+
+Donde:
+
+\[
+\mathbf{Y} =
+\begin{bmatrix}
+Y_1 \\
+Y_2 \\
+\vdots \\
+Y_m
+\end{bmatrix},
+\quad
+\mathbf{X} =
+\begin{bmatrix}
+1 & X_{11} & X_{12} & \cdots & X_{1n} \\
+1 & X_{21} & X_{22} & \cdots & X_{2n} \\
+\vdots & \vdots & \vdots & \ddots & \vdots \\
+1 & X_{m1} & X_{m2} & \cdots & X_{mn}
+\end{bmatrix},
+\quad
+\boldsymbol{\beta} =
+\begin{bmatrix}
+\beta_0 \\
+\beta_1 \\
+\beta_2 \\
+\vdots \\
+\beta_n
+\end{bmatrix}
+\]
+""")
+
+    st.markdown("---")
+
+    st.markdown(r"""
+**4. Cálculo de los coeficientes**
+
+Usamos la ecuación normal:
+
+\[
+\boldsymbol{\beta} = (\mathbf{X}^T \mathbf{X})^{-1} \mathbf{X}^T \mathbf{Y}
+\]
+
+Esta fórmula proporciona los coeficientes que **minimizan** la suma de errores cuadrados.
+""")
+
+    st.markdown("---")
+
+    st.markdown(r"""
+**5. Interpretación de coeficientes**
+
+Cada \(\beta_i\) representa el cambio esperado en \(Y\) por unidad de cambio en \(X_i\), manteniendo las demás variables constantes.
+""")
+
+    with st.expander("🔢 Ejemplo práctico", expanded=False):
+        st.markdown(r"""
+Supongamos que queremos predecir el precio de una casa según su tamaño (m²) y número de habitaciones:
+
+\[
+Precio = 31.04 + 1.4 \times Tamaño + 2.5 \times Habitaciones
+\]
+
+- Por cada metro cuadrado adicional, el precio aumenta en 1.4 unidades monetarias.  
+- Por cada habitación adicional, aumenta en 2.5 unidades.
+""")
+
+    st.markdown("---")
+
+    st.markdown(r"""
+**6. Uso práctico**
+
+La ecuación resultante se usa para realizar predicciones basadas en múltiples variables independientes:
+
+```python
+# Ejemplo de predicción
+X_nuevo = [1, tamanio, habitaciones]
+prediccion = X_nuevo @ beta_hat  # producto matricial
+""")
